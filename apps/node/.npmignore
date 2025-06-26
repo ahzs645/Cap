@@ -1,0 +1,10 @@
+target/
+Cargo.toml
+src/
+build.rs
+.cargo/
+*.node
+!*.node
+node_modules/
+.DS_Store
+*.log

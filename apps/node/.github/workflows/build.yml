@@ -1,0 +1,97 @@
+name: Build and Test Node Package
+
+on:
+  push:
+    branches: [ main ]
+    paths: [ 'apps/node/**' ]
+  pull_request:
+    branches: [ main ]
+    paths: [ 'apps/node/**' ]
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        settings:
+          - host: macos-latest
+            target: x86_64-apple-darwin
+          - host: macos-latest
+            target: aarch64-apple-darwin
+          - host: windows-latest
+            target: x86_64-pc-windows-msvc
+          - host: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+          - host: ubuntu-latest
+            target: aarch64-unknown-linux-gnu
+            
+    name: Build ${{ matrix.settings.target }}
+    runs-on: ${{ matrix.settings.host }}
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.settings.target }}
+          
+      - name: Cache cargo
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ matrix.settings.target }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          
+      - name: Install dependencies (Linux)
+        if: matrix.settings.host == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libavcodec-dev libavformat-dev libavutil-dev libavfilter-dev libavdevice-dev
+          
+      - name: Install dependencies (macOS)
+        if: matrix.settings.host == 'macos-latest'
+        run: |
+          brew install ffmpeg
+          
+      - name: Install dependencies (Windows)
+        if: matrix.settings.host == 'windows-latest'
+        run: |
+          # Windows dependencies handled by vcpkg or other means
+          
+      - name: Install cross-compilation toolchain
+        if: matrix.settings.target == 'aarch64-unknown-linux-gnu'
+        run: |
+          sudo apt-get install -y gcc-aarch64-linux-gnu
+          
+      - name: Install pnpm
+        run: npm install -g pnpm
+        
+      - name: Install dependencies
+        run: |
+          cd apps/node
+          pnpm install
+          
+      - name: Build
+        run: |
+          cd apps/node
+          pnpm build
+          
+      - name: Test
+        if: matrix.settings.host != 'ubuntu-latest' || matrix.settings.target != 'aarch64-unknown-linux-gnu'
+        run: |
+          cd apps/node
+          pnpm test
+          
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: bindings-${{ matrix.settings.target }}
+          path: apps/node/*.node

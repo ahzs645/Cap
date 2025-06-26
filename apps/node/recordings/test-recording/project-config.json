@@ -1,0 +1,61 @@
+{
+  "aspectRatio": null,
+  "background": {
+    "source": {
+      "type": "wallpaper",
+      "path": "sequoia-dark"
+    },
+    "blur": 0.0,
+    "padding": 0.0,
+    "rounding": 0.0,
+    "inset": 0,
+    "crop": null,
+    "shadow": 73.6,
+    "advancedShadow": {
+      "size": 14.4,
+      "opacity": 68.1,
+      "blur": 3.8
+    }
+  },
+  "camera": {
+    "hide": false,
+    "mirror": false,
+    "position": {
+      "x": "right",
+      "y": "bottom"
+    },
+    "size": 30.0,
+    "zoom_size": 60.0,
+    "rounding": 30.0,
+    "shadow": 62.5,
+    "advanced_shadow": {
+      "size": 33.9,
+      "opacity": 44.2,
+      "blur": 10.5
+    }
+  },
+  "audio": {
+    "mute": false,
+    "improve": false,
+    "micVolumeDb": 0.0,
+    "micStereoMode": "stereo",
+    "systemVolumeDb": 0.0
+  },
+  "cursor": {
+    "hide": false,
+    "hideWhenIdle": false,
+    "size": 100,
+    "type": "pointer",
+    "animationStyle": "regular",
+    "tension": 100.0,
+    "mass": 1.0,
+    "friction": 20.0,
+    "raw": false,
+    "motionBlur": 0.5
+  },
+  "hotkeys": {
+    "show": false
+  },
+  "timeline": null,
+  "captions": null
+}

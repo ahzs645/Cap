@@ -1,0 +1,323 @@
+Creating an npm Package with napi
+Here's how you could structure this:
+1. Create a new crate for the napi bindings
+rust// crates/napi-recording/Cargo.toml
+[package]
+name = "cap-recording-node"
+version = "0.1.0"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+napi = { version = "2", features = ["napi8", "tokio_rt"] }
+napi-derive = "2"
+cap-recording = { path = "../recording" }
+cap-media = { path = "../media" }
+tokio = { version = "1", features = ["rt-multi-thread"] }
+2. Expose the recording API via napi
+rust// crates/napi-recording/src/lib.rs
+use napi::bindgen_prelude::*;
+use napi_derive::napi;
+use cap_recording::{spawn_studio_recording_actor, RecordingBaseInputs, StudioRecordingHandle};
+use cap_media::sources::ScreenCaptureTarget;
+use std::path::PathBuf;
+
+#[napi]
+pub struct CapRecorder {
+    handle: Option<StudioRecordingHandle>,
+    done_rx: Option<tokio::sync::oneshot::Receiver<()>>,
+}
+
+#[napi]
+pub struct RecordingConfig {
+    pub output_path: String,
+    pub screen_id: Option<u32>,
+    pub window_id: Option<u32>, 
+    pub capture_system_audio: bool,
+    pub fps: Option<u32>,
+}
+
+#[napi]
+impl CapRecorder {
+    #[napi(constructor)]
+    pub fn new() -> Self {
+        Self {
+            handle: None,
+            done_rx: None,
+        }
+    }
+
+    #[napi]
+    pub async fn start_recording(&mut self, config: RecordingConfig) -> Result<()> {
+        let capture_target = if let Some(screen_id) = config.screen_id {
+            ScreenCaptureTarget::Screen { id: screen_id }
+        } else if let Some(window_id) = config.window_id {
+            ScreenCaptureTarget::Window { id: window_id }
+        } else {
+            return Err(Error::new(Status::InvalidArg, "Must specify screen_id or window_id"));
+        };
+
+        let recording_id = uuid::Uuid::new_v4().to_string();
+        let output_path = PathBuf::from(config.output_path);
+
+        let base_inputs = RecordingBaseInputs {
+            capture_target,
+            capture_system_audio: config.capture_system_audio,
+            mic_feed: &None, // Could be extended to support mic
+        };
+
+        let (handle, done_rx) = spawn_studio_recording_actor(
+            recording_id,
+            output_path,
+            base_inputs,
+            None, // Camera feed - could be added
+            false, // Custom cursor capture
+        )
+        .await
+        .map_err(|e| Error::new(Status::GenericFailure, format!("Failed to start recording: {}", e)))?;
+
+        self.handle = Some(handle);
+        self.done_rx = Some(done_rx);
+
+        Ok(())
+    }
+
+    #[napi]
+    pub async fn stop_recording(&mut self) -> Result<String> {
+        if let Some(handle) = self.handle.take() {
+            let completed = handle.stop().await
+                .map_err(|e| Error::new(Status::GenericFailure, format!("Failed to stop recording: {}", e)))?;
+            
+            Ok(completed.project_path.to_string_lossy().to_string())
+        } else {
+            Err(Error::new(Status::InvalidArg, "No active recording"))
+        }
+    }
+
+    #[napi]
+    pub async fn pause_recording(&self) -> Result<()> {
+        if let Some(handle) = &self.handle {
+            handle.pause().await
+                .map_err(|e| Error::new(Status::GenericFailure, format!("Failed to pause: {}", e)))?;
+        }
+        Ok(())
+    }
+
+    #[napi]
+    pub async fn resume_recording(&self) -> Result<()> {
+        if let Some(handle) = &self.handle {
+            handle.resume().await
+                .map_err(|e| Error::new(Status::GenericFailure, format!("Failed to resume: {}", e)))?;
+        }
+        Ok(())
+    }
+}
+
+// Utility functions for listing available capture targets
+#[napi]
+pub fn list_screens() -> Vec<ScreenInfo> {
+    cap_media::sources::list_screens()
+        .into_iter()
+        .map(|(screen, _)| ScreenInfo {
+            id: screen.id,
+            name: screen.name,
+        })
+        .collect()
+}
+
+#[napi]
+pub fn list_windows() -> Vec<WindowInfo> {
+    cap_media::sources::list_windows()
+        .into_iter()
+        .map(|(window, _)| WindowInfo {
+            id: window.id,
+            title: window.title,
+        })
+        .collect()
+}
+
+#[napi(object)]
+pub struct ScreenInfo {
+    pub id: u32,
+    pub name: String,
+}
+
+#[napi(object)]
+pub struct WindowInfo {
+    pub id: u32,
+    pub title: String,
+}
+3. Package structure
+cap-recording-node/
+├── Cargo.toml
+├── package.json
+├── src/
+│   └── lib.rs
+├── build.rs (optional, for build scripts)
+└── npm/
+    ├── package.json
+    └── index.d.ts (TypeScript definitions)
+4. package.json for the npm module
+json{
+  "name": "@cap/recording",
+  "version": "0.1.0",
+  "description": "Headless screen recording library powered by Cap",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "scripts": {
+    "build": "napi build --platform --release",
+    "build:debug": "napi build --platform",
+    "prepublishOnly": "napi prepublish -t npm"
+  },
+  "keywords": ["screen-recording", "video", "capture", "headless"],
+  "devDependencies": {
+    "@napi-rs/cli": "^2.18.0"
+  },
+  "engines": {
+    "node": ">= 16"
+  },
+  "os": ["darwin", "linux", "win32"]
+}
+5. TypeScript usage example
+typescriptimport { CapRecorder, listScreens, listWindows } from '@cap/recording';
+
+async function recordScreen() {
+  const recorder = new CapRecorder();
+  
+  // List available screens
+  const screens = listScreens();
+  console.log('Available screens:', screens);
+  
+  // Start recording the first screen
+  await recorder.startRecording({
+    outputPath: './recordings/my-recording',
+    screenId: screens[0].id,
+    captureSystemAudio: true,
+    fps: 30
+  });
+  
+  // Record for 10 seconds
+  setTimeout(async () => {
+    const outputPath = await recorder.stopRecording();
+    console.log('Recording saved to:', outputPath);
+  }, 10000);
+}
+Benefits of this approach:
+
+Headless: No GUI dependencies, perfect for servers/automation
+Cross-platform: Works on macOS, Windows, and Linux
+High performance: Native Rust code with minimal overhead
+Feature-rich: Supports screen/window capture, audio, cameras, cursor tracking
+Async/await: Modern JavaScript API that works well with Node.js
+
+Next steps:
+
+Create the napi crate structure
+Set up the build system with @napi-rs/cli
+Implement the bindings gradually (start with basic screen recording)
+Add CI/CD for building native binaries for different platforms
+Publish to npm with pre-built binaries
+
+This would create a powerful, headless recording library that leverages all the work already done in the Cap project!RetryAJso is this a seperate repo from the cap?EditPondered integrating npm package within existing Cap repository.7sThe user is asking whether the npm package with napi would be a separate repository from the main Cap project. Looking at the project structure, it seems like Cap is organized as a monorepo with multiple crates and applications under one repository.
+The question is whether to:
+
+Add the napi bindings as another crate within the existing Cap repo
+Create a completely separate repository for the npm package
+
+Let me think about the pros and cons:
+Within the existing Cap repo:
+
+Pros: Easier to maintain, share code, keep in sync with changes, leverage existing CI/CD
+Cons: Larger repo, different release cycles might be needed
+
+Separate repo:
+
+Pros: Independent versioning, smaller focused repo, different contributor base
+Cons: Need to sync changes manually, duplicate CI/CD setup, harder to keep dependencies in sync
+
+Looking at the project structure, it already has:
+
+apps/cli/ - Command line interface
+apps/desktop/ - Desktop app
+apps/web/ - Web app
+crates/ - Various Rust crates
+
+It seems like the pattern would be to add it as either:
+
+A new app: apps/node/ or similar
+A new crate: crates/napi-recording/
+
+Given that this would be exposing the existing recording functionality, it makes more sense to keep it in the same repo to leverage the existing codebase and maintain consistency.No, it would make more sense to keep it within the existing Cap repository as another crate/package. Here's why and how:
+Recommended approach: Add to existing Cap repo
+The Cap project is already structured as a monorepo with multiple applications and crates:
+cap/
+├── apps/
+│   ├── cli/           # Command line interface  
+│   ├── desktop/       # Desktop app (Tauri)
+│   └── web/           # Web app (Next.js)
+├── crates/
+│   ├── recording/     # Core recording functionality
+│   ├── media/         # Media pipeline
+│   ├── project/       # Project format
+│   └── ...
+└── packages/
+    ├── ui-solid/      # UI components
+    └── s3/           # S3 integration
+Add the napi package to this structure:
+cap/
+├── apps/
+│   ├── cli/
+│   ├── desktop/
+│   ├── web/
+│   └── node/          # 👈 NEW: Node.js bindings
+├── crates/
+│   ├── recording/
+│   ├── media/
+│   └── napi-node/     # 👈 NEW: napi Rust crate
+└── packages/
+    ├── ui-solid/
+    └── node-recording/ # 👈 NEW: npm package files
+Benefits of keeping it in the same repo:
+
+Shared dependencies: Can directly reference cap-recording, cap-media, etc.
+Synchronized releases: Changes to core recording logic automatically available
+Consistent CI/CD: Leverage existing build systems and testing
+Easier maintenance: One place for issues, PRs, and documentation
+Workspace management: Can use Cargo workspace and pnpm workspace features
+
+Example workspace structure:
+Cargo.toml (root):
+toml[workspace]
+members = [
+    "apps/cli", 
+    "apps/desktop/src-tauri",
+    "crates/*",
+    "apps/node"  # Add the napi crate
+]
+package.json (root):
+json{
+  "workspaces": [
+    "apps/web",
+    "packages/*",
+    "packages/node-recording"  # Add npm package
+  ]
+}
+apps/node/Cargo.toml:
+toml[package]
+name = "cap-node"
+version = "0.1.0"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+cap-recording = { path = "../../crates/recording" }
+cap-media = { path = "../../crates/media" }
+napi = "2"
+napi-derive = "2"
+Release strategy:
+You could either:
+
+Independent versioning: The npm package has its own version separate from the main Cap releases
+Synchronized versioning: Release the npm package alongside major Cap releases
