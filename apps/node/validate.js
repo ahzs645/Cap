@@ -130,6 +130,109 @@ async function validateNodePackage() {
     });
   }
   
+  // Test 9: Window recording functionality
+  async function testWindowRecording() {
+    console.log('\n🎥 Testing Window Recording Functionality');
+    console.log('=========================================');
+    
+    if (!hasScreenCapturePermission()) {
+      console.log('❌ Cannot test window recording - no screen capture permission');
+      return false;
+    }
+    
+    const windows = listAvailableWindows();
+    if (windows.length === 0) {
+      console.log('❌ Cannot test window recording - no windows available');
+      return false;
+    }
+    
+    // Find a good window to record (prefer visible applications)
+    const targetWindow = windows.find(w => 
+      w.ownerName.toLowerCase().includes('code') ||
+      w.ownerName.toLowerCase().includes('terminal') ||
+      w.ownerName.toLowerCase().includes('finder') ||
+      w.ownerName.toLowerCase().includes('safari') ||
+      w.ownerName.toLowerCase().includes('chrome')
+    ) || windows[0];
+    
+    console.log(`📋 Target window: "${targetWindow.title}" by ${targetWindow.ownerName}`);
+    console.log(`   Window ID: ${targetWindow.id}`);
+    
+    const recorder = new CapRecorder();
+    const outputDir = './recordings/window-validation-test';
+    
+    try {
+      console.log('🎬 Starting window recording...');
+      await recorder.startRecording({
+        outputPath: outputDir,
+        windowId: targetWindow.id,
+        captureSystemAudio: false,
+        fps: 30
+      });
+      
+      console.log('⏱️  Recording for 3 seconds...');
+      await new Promise(resolve => setTimeout(resolve, 3000));
+      
+      console.log('⏹️  Stopping recording...');
+      const outputPath = await recorder.stopRecording();
+      console.log(`💾 Recording saved to: ${outputPath}`);
+      
+      // Validate the recording
+      const contentPath = path.join(outputDir, 'content');
+      const segmentsPath = path.join(contentPath, 'segments');
+      const segmentPath = path.join(segmentsPath, 'segment-0');
+      const videoPath = path.join(segmentPath, 'display.mp4');
+      
+      if (!fs.existsSync(videoPath)) {
+        console.log('❌ Window recording FAILED - no video file created');
+        return false;
+      }
+      
+      const stats = fs.statSync(videoPath);
+      console.log(`📊 Video file size: ${(stats.size / 1024).toFixed(2)} KB`);
+      
+      if (stats.size === 0) {
+        console.log('❌ Window recording FAILED - video file is empty');
+        return false;
+      }
+      
+      if (stats.size < 1000) {
+        console.log('⚠️  Window recording - video file is very small, might indicate an issue');
+        return false;
+      }
+      
+      console.log('✅ Window recording SUCCESS - video file created and has content');
+      
+      // Check if the recording has proper structure
+      const segments = fs.readdirSync(segmentsPath);
+      console.log(`📁 Created ${segments.length} segment(s)`);
+      
+      return true;
+      
+    } catch (error) {
+      console.log(`❌ Window recording FAILED: ${error.message}`);
+      try {
+        await recorder.cancelRecording();
+      } catch (cancelError) {
+        console.log(`⚠️  Failed to cancel recording: ${cancelError.message}`);
+      }
+      return false;
+    }
+  }
+  
+  runTest('Window recording functionality', testWindowRecording);
+  
+  // Test 9: Actual window recording test
+  console.log('\n🎬 Running live window recording test...');
+  const windowRecordingResult = await testWindowRecording();
+  testsTotal++;
+  if (windowRecordingResult) {
+    testsPassed++;
+    console.log('✅ Live window recording test passed');
+  } else {
+    console.log('❌ Live window recording test failed');
+  }
+
   console.log('\n📊 Validation Summary');
   console.log('=====================');
   console.log(`Tests Passed: ${testsPassed}/${testsTotal}`);
