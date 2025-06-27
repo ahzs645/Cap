@@ -198,23 +198,65 @@ jobs:
           image: ubuntu:22.04
           options: '--user 0:0 -v ${{ github.workspace }}/.cargo-cache:/root/.cargo/registry/cache -v ${{ github.workspace }}/.cargo:/root/.cargo/registry/index -v ${{ github.workspace }}:/build -w /build'
           run: |-
-            set -e &&
-            apt-get update &&
-            apt-get install -y curl build-essential &&
-            curl -fsSL https://deb.nodesource.com/setup_20.x | bash - &&
-            apt-get install -y nodejs &&
-            curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable &&
-            source /root/.cargo/env &&
-            rustup target add x86_64-unknown-linux-gnu &&
-            apt-get install -y pkg-config libpipewire-0.3-dev libasound2-dev libpulse-dev libjack-jackd2-dev libssl-dev libv4l-dev libclang-dev ffmpeg libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libswresample-dev linux-libc-dev &&
-            export LIBCLANG_PATH=/usr/lib/x86_64-linux-gnu &&
-            export BINDGEN_EXTRA_CLANG_ARGS="-I/usr/include -I/usr/include/linux -I/usr/include/x86_64-linux-gnu" &&
-            export PKG_CONFIG_ALLOW_CROSS=1 &&
-            export PKG_CONFIG_ALLOW_SYSTEM_CFLAGS=1 &&
-            export PKG_CONFIG_ALLOW_SYSTEM_LIBS=1 &&
-            cd apps/node &&
-            npm install &&
-            npx napi build --platform --release --target x86_64-unknown-linux-gnu &&
+            set -e
+            
+            # Update package lists
+            apt-get update
+            
+            # Install essential tools
+            apt-get install -y curl build-essential git
+            
+            # Install Node.js 20
+            curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+            apt-get install -y nodejs
+            
+            # Install Rust with the latest stable toolchain
+            curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable
+            source /root/.cargo/env
+            rustup target add x86_64-unknown-linux-gnu
+            
+            # Install Ubuntu 22.04 system dependencies (better V4L2 headers)
+            apt-get install -y \
+              pkg-config \
+              libpipewire-0.3-dev \
+              libasound2-dev \
+              libpulse-dev \
+              libjack-jackd2-dev \
+              libssl-dev \
+              libv4l-dev \
+              clang \
+              libclang-dev \
+              ffmpeg \
+              libavcodec-dev \
+              libavformat-dev \
+              libavutil-dev \
+              libswscale-dev \
+              libswresample-dev \
+              linux-libc-dev
+            
+            # Set up environment for better compatibility
+            export LIBCLANG_PATH="/usr/lib/x86_64-linux-gnu"
+            export BINDGEN_EXTRA_CLANG_ARGS="-I/usr/include/linux -I/usr/include/x86_64-linux-gnu -I/usr/include"
+            export PKG_CONFIG_ALLOW_CROSS=1
+            export PKG_CONFIG_ALLOW_SYSTEM_CFLAGS=1
+            export PKG_CONFIG_ALLOW_SYSTEM_LIBS=1
+            export RUST_BACKTRACE=1
+            
+            # Update Cargo.lock to use newer dependencies
+            cd apps/node
+            
+            # Clean any cached builds that might be using old bindgen
+            cargo clean
+            
+            # Install dependencies
+            npm install
+            
+            # Build with verbose output to debug issues
+            echo "🔨 Building with target x86_64-unknown-linux-gnu..."
+            npx napi build --platform --release --target x86_64-unknown-linux-gnu
+            
+            # Verify build
+            ls -la *.node
             strip *.node
 
       - name: Build
