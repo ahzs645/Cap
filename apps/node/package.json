@@ -80,11 +80,5 @@
     "index.d.ts",
     "index.js",
     "*.node"
-  ],
-  "optionalDependencies": {
-    "@firstform/caprecorder-win32-x64-msvc": "1.0.1",
-    "@firstform/caprecorder-darwin-x64": "1.0.1",
-    "@firstform/caprecorder-darwin-arm64": "1.0.1",
-    "@firstform/caprecorder-linux-x64-gnu": "1.0.1"
-  }
+  ]
 }

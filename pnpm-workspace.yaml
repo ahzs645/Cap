@@ -1,5 +1,6 @@
 packages:
   - "apps/*"
+  - "!apps/node"
   - "packages/*"
   - "crates/tauri-plugin-*"
   - "infra"
