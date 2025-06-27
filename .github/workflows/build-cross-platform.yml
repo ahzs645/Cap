@@ -62,10 +62,12 @@ jobs:
       - name: Setup macOS dependencies
         if: contains(matrix.settings.host, 'macos')
         run: |
-          brew install ffmpeg pkg-config
+          brew install ffmpeg pkg-config llvm
           echo "PKG_CONFIG_PATH=$(brew --prefix)/lib/pkgconfig:$(brew --prefix ffmpeg)/lib/pkgconfig" >> $GITHUB_ENV
           echo "LIBRARY_PATH=$(brew --prefix)/lib:$(brew --prefix ffmpeg)/lib" >> $GITHUB_ENV
           echo "CPATH=$(brew --prefix)/include:$(brew --prefix ffmpeg)/include" >> $GITHUB_ENV
+          echo "LIBCLANG_PATH=$(brew --prefix llvm)/lib" >> $GITHUB_ENV
+          echo "BINDGEN_EXTRA_CLANG_ARGS=-I$(brew --prefix)/include" >> $GITHUB_ENV
           
       - name: Setup Linux dependencies
         if: contains(matrix.settings.host, 'ubuntu')
@@ -95,6 +97,24 @@ jobs:
           echo "LIBCLANG_PATH=/usr/lib/llvm-14/lib" >> $GITHUB_ENV
           echo "BINDGEN_EXTRA_CLANG_ARGS=-I/usr/include/linux" >> $GITHUB_ENV
           
+      - name: Setup Windows dependencies
+        if: contains(matrix.settings.host, 'windows')
+        shell: powershell
+        run: |
+          # Install vcpkg for FFmpeg
+          git clone https://github.com/Microsoft/vcpkg.git C:\vcpkg
+          C:\vcpkg\bootstrap-vcpkg.bat
+          C:\vcpkg\vcpkg.exe integrate install
+          
+          # Install FFmpeg with static linking
+          C:\vcpkg\vcpkg.exe install ffmpeg[core,avcodec,avformat,avdevice,avfilter,avutil,swresample,swscale]:x64-windows-static
+          
+          # Set environment variables
+          echo "VCPKG_ROOT=C:\vcpkg" >> $env:GITHUB_ENV
+          echo "PKG_CONFIG_PATH=C:\vcpkg\installed\x64-windows-static\lib\pkgconfig" >> $env:GITHUB_ENV
+          echo "FFMPEG_DIR=C:\vcpkg\installed\x64-windows-static" >> $env:GITHUB_ENV
+          echo "LIBPATH=C:\vcpkg\installed\x64-windows-static\lib;$env:LIBPATH" >> $env:GITHUB_ENV
+          
       - name: Setup Linux ARM cross compilation
         if: contains(matrix.settings.target, 'aarch64') && contains(matrix.settings.host, 'ubuntu')
         run: |
@@ -112,8 +132,16 @@ jobs:
           RUST_TARGET: ${{ matrix.settings.target }}
           PKG_CONFIG_ALLOW_SYSTEM_CFLAGS: 1
           PKG_CONFIG_ALLOW_SYSTEM_LIBS: 1
-          LIBCLANG_PATH: ${{ contains(matrix.settings.host, 'ubuntu') && '/usr/lib/llvm-14/lib' || '' }}
-          BINDGEN_EXTRA_CLANG_ARGS: ${{ contains(matrix.settings.host, 'ubuntu') && '-I/usr/include/linux' || '' }}
+          LIBCLANG_PATH: ${{ 
+            contains(matrix.settings.host, 'ubuntu') && '/usr/lib/llvm-14/lib' || 
+            contains(matrix.settings.host, 'macos') && '/opt/homebrew/opt/llvm/lib' || 
+            '' }}
+          BINDGEN_EXTRA_CLANG_ARGS: ${{ 
+            contains(matrix.settings.host, 'ubuntu') && '-I/usr/include/linux' || 
+            contains(matrix.settings.host, 'macos') && '-I/opt/homebrew/include' || 
+            '' }}
+          VCPKG_ROOT: ${{ contains(matrix.settings.host, 'windows') && 'C:\vcpkg' || '' }}
+          FFMPEG_DIR: ${{ contains(matrix.settings.host, 'windows') && 'C:\vcpkg\installed\x64-windows-static' || '' }}
         
       - name: Upload artifacts
         uses: actions/upload-artifact@v4

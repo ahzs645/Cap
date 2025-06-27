@@ -1,4 +1,151 @@
-# Cross-Platform Build Guide for Cap Node.js Package
+# Cross-Platform Build Guide for Cap N### Method 2: Local Development
+
+For local development and testing:
+
+```bash
+# Test build on current platform (recommended first step)
+./test-builds-local.sh
+
+# Build for current platform only
+npm run build
+
+# Try cross-platform build (limited by local environment)
+./build-cross-platform.sh
+```
+
+### Method 3: Platform-Specific Setup
+
+#### Building on macOS
+
+**Prerequisites:**
+```bash
+# Install Xcode Command Line Tools
+xcode-select --install
+
+# Install Homebrew
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+# Install dependencies
+brew install ffmpeg pkg-config llvm
+
+# Set environment variables (add to ~/.zshrc or ~/.bash_profile)
+export LIBCLANG_PATH="$(brew --prefix llvm)/lib"
+export PKG_CONFIG_PATH="$(brew --prefix)/lib/pkgconfig:$(brew --prefix ffmpeg)/lib/pkgconfig"
+```
+
+**Build commands:**
+```bash
+# Install Node.js dependencies
+npm install
+
+# Build for current architecture
+npm run build
+
+# Build for both Intel and Apple Silicon (if on macOS)
+npm run build:macos
+```
+
+#### Building on Windows
+
+**Prerequisites:**
+```powershell
+# Install Visual Studio Build Tools or Visual Studio with C++ support
+# Download from: https://visualstudio.microsoft.com/downloads/
+
+# Install Git
+# Download from: https://git-scm.com/download/win
+
+# Install vcpkg for FFmpeg
+git clone https://github.com/Microsoft/vcpkg.git C:\vcpkg
+C:\vcpkg\bootstrap-vcpkg.bat
+C:\vcpkg\vcpkg.exe integrate install
+
+# Install FFmpeg
+C:\vcpkg\vcpkg.exe install ffmpeg:x64-windows-static
+
+# Set environment variables (add to system environment)
+set VCPKG_ROOT=C:\vcpkg
+set FFMPEG_DIR=C:\vcpkg\installed\x64-windows-static
+set PKG_CONFIG_PATH=C:\vcpkg\installed\x64-windows-static\lib\pkgconfig
+```
+
+**Build commands:**
+```bash
+# Install Node.js dependencies
+npm install
+
+# Build for Windows x64
+npm run build:windows
+```
+
+#### Building on Linux
+
+**Prerequisites:**
+
+**Ubuntu/Debian:**
+```bash
+# Update package list
+sudo apt-get update
+
+# Install build dependencies
+sudo apt-get install -y \
+  build-essential \
+  pkg-config \
+  libpipewire-0.3-dev \
+  libasound2-dev \
+  libpulse-dev \
+  libjack-jackd2-dev \
+  libssl-dev \
+  libv4l-dev \
+  libclang-dev \
+  ffmpeg \
+  libavcodec-dev \
+  libavformat-dev \
+  libavutil-dev \
+  libswscale-dev \
+  libswresample-dev
+
+# Set environment variables (add to ~/.bashrc)
+export LIBCLANG_PATH=/usr/lib/llvm-14/lib
+export BINDGEN_EXTRA_CLANG_ARGS=-I/usr/include/linux
+```
+
+**RHEL/CentOS/Fedora:**
+```bash
+# For DNF (Fedora)
+sudo dnf install -y \
+  gcc \
+  pkgconf-devel \
+  pipewire-devel \
+  alsa-lib-devel \
+  pulseaudio-libs-devel \
+  jack-audio-connection-kit-devel \
+  openssl-devel \
+  libv4l-devel \
+  clang-devel \
+  ffmpeg-devel
+
+# For YUM (RHEL/CentOS)
+sudo yum install -y \
+  gcc \
+  pkgconfig \
+  pipewire-devel \
+  alsa-lib-devel \
+  pulseaudio-libs-devel \
+  jack-audio-connection-kit-devel \
+  openssl-devel \
+  libv4l-devel \
+  clang-devel \
+  ffmpeg-devel
+```
+
+**Build commands:**
+```bash
+# Install Node.js dependencies
+npm install
+
+# Build for Linux x64
+npm run build:linuxe
 
 This guide explains how to build native binaries for all supported platforms.
 

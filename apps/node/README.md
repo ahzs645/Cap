@@ -397,6 +397,109 @@ These are deprecation warnings from FFmpeg and don't affect functionality, but i
 
 If you need to build from source or contribute to the project:
 
+```
+
+For detailed build instructions, see [BUILD.md](./BUILD.md).
+
+## Troubleshooting
+
+### Build Issues
+
+#### macOS: "Unable to find libclang" Error
+
+If you encounter the error: `Unable to find libclang: "couldn't find any valid shared libraries matching: ['libclang.dylib']"`
+
+**Solution:**
+```bash
+# Install LLVM via Homebrew
+brew install llvm
+
+# Set environment variable
+export LIBCLANG_PATH="$(brew --prefix llvm)/lib"
+
+# For Apple Silicon Macs:
+export LIBCLANG_PATH="/opt/homebrew/opt/llvm/lib"
+
+# For Intel Macs:
+export LIBCLANG_PATH="/usr/local/opt/llvm/lib"
+```
+
+#### Windows: FFmpeg/pkg-config Issues
+
+If you encounter FFmpeg or pkg-config related errors:
+
+**Solution:**
+```bash
+# Install vcpkg
+git clone https://github.com/Microsoft/vcpkg.git C:\vcpkg
+C:\vcpkg\bootstrap-vcpkg.bat
+C:\vcpkg\vcpkg.exe integrate install
+
+# Install FFmpeg
+C:\vcpkg\vcpkg.exe install ffmpeg:x64-windows-static
+
+# Set environment variables
+set VCPKG_ROOT=C:\vcpkg
+set FFMPEG_DIR=C:\vcpkg\installed\x64-windows-static
+```
+
+#### Linux: Missing Dependencies
+
+**Ubuntu/Debian:**
+```bash
+sudo apt-get update
+sudo apt-get install -y pkg-config libpipewire-0.3-dev libasound2-dev \
+  libpulse-dev libjack-jackd2-dev libssl-dev libv4l-dev libclang-dev \
+  ffmpeg libavcodec-dev libavformat-dev libavutil-dev libswscale-dev \
+  libswresample-dev build-essential
+```
+
+**RHEL/CentOS/Fedora:**
+```bash
+# For DNF (Fedora)
+sudo dnf install -y pkgconf-devel pipewire-devel alsa-lib-devel \
+  pulseaudio-libs-devel jack-audio-connection-kit-devel openssl-devel \
+  libv4l-devel clang-devel ffmpeg-devel gcc
+
+# For YUM (RHEL/CentOS)
+sudo yum install -y pkgconfig pipewire-devel alsa-lib-devel \
+  pulseaudio-libs-devel jack-audio-connection-kit-devel openssl-devel \
+  libv4l-devel clang-devel ffmpeg-devel gcc
+```
+
+#### Rust Edition 2024 Error
+
+If you encounter: `feature edition2024 is required`
+
+This indicates you're using an older version of Rust. The project has been updated to use edition 2021 for better compatibility.
+
+### Runtime Issues
+
+#### Permission Errors
+
+Make sure your application has the necessary permissions:
+
+- **macOS**: Screen Recording permission in System Preferences > Security & Privacy > Privacy > Screen Recording
+- **Windows**: Run as Administrator if needed
+- **Linux**: Ensure your user is in the appropriate groups for audio/video access
+
+#### Audio Recording Not Working
+
+1. Check system audio permissions
+2. Ensure no other applications are using the audio device exclusively
+3. Try different audio sample rates if available
+
+### Performance Issues
+
+- Ensure adequate disk space for recordings
+- Close other resource-intensive applications
+- Consider adjusting recording quality settings
+- Monitor CPU and memory usage during recording
+
+## Development
+
+### Building from Source
+
 ```bash
 # Clone the repository
 git clone https://github.com/CapSoftware/Cap.git

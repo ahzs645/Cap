@@ -12,6 +12,14 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
+# Setup dependencies first
+echo -e "${YELLOW}Setting up dependencies...${NC}"
+if [ -f "scripts/setup-deps.js" ]; then
+    node scripts/setup-deps.js
+else
+    echo -e "${YELLOW}No setup script found, skipping dependency setup${NC}"
+fi
+
 # Function to build for a specific target
 build_target() {
     local target=$1
