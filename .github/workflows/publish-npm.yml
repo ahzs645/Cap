@@ -23,34 +23,22 @@ jobs:
             target: x86_64-apple-darwin
             build: |
               cd apps/node
-              npx napi build --platform --release --target x86_64-apple-darwin
+              npx @napi-rs/cli build --platform --release --target x86_64-apple-darwin
               strip -x *.node
           - host: macos-14
             target: aarch64-apple-darwin
             build: |
               cd apps/node
-              npx napi build --platform --release --target aarch64-apple-darwin
+              npx @napi-rs/cli build --platform --release --target aarch64-apple-darwin
               strip -x *.node
           - host: windows-latest
             target: x86_64-pc-windows-msvc
             build: |
               cd apps/node
-              npx napi build --platform --release --target x86_64-pc-windows-msvc
+              npx @napi-rs/cli build --platform --release --target x86_64-pc-windows-msvc
           - host: ubuntu-latest
             target: x86_64-unknown-linux-gnu
-            docker: ghcr.io/napi-rs/napi-rs/nodejs-rust:lts-debian
-            build: |-
-              set -e &&
-              apt-get update &&
-              apt-get install -y pkg-config libpipewire-0.3-dev libasound2-dev libpulse-dev libjack-jackd2-dev libssl-dev libv4l-dev libclang-dev ffmpeg libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libswresample-dev linux-libc-dev build-essential &&
-              export LIBCLANG_PATH=/usr/lib/llvm-14/lib &&
-              export BINDGEN_EXTRA_CLANG_ARGS="-I/usr/include/linux -I/usr/include --verbose" &&
-              export V4L2_SYS_INCLUDE_PATH=/usr/include &&
-              export DOCS_RS=1 &&
-              export CI=true &&
-              cd apps/node &&
-              npx napi build --platform --release --target x86_64-unknown-linux-gnu &&
-              strip *.node
+            docker: ubuntu:22.04
 
     name: stable - ${{ matrix.settings.target }} - node@20
     runs-on: ${{ matrix.settings.host }}
@@ -73,32 +61,6 @@ jobs:
           echo "LIBRARY_PATH=$(brew --prefix)/lib:$(brew --prefix ffmpeg)/lib" >> $GITHUB_ENV
           echo "CPATH=$(brew --prefix)/include:$(brew --prefix ffmpeg)/include" >> $GITHUB_ENV
 
-      - name: Install Linux dependencies
-        if: runner.os == 'Linux' && !matrix.settings.docker
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            pkg-config \
-            libpipewire-0.3-dev \
-            libasound2-dev \
-            libpulse-dev \
-            libjack-jackd2-dev \
-            libssl-dev \
-            libv4l-dev \
-            libclang-dev \
-            ffmpeg \
-            libavcodec-dev \
-            libavformat-dev \
-            libavutil-dev \
-            libswscale-dev \
-            libswresample-dev \
-            linux-libc-dev \
-            build-essential
-          echo "LIBCLANG_PATH=/usr/lib/llvm-14/lib" >> $GITHUB_ENV
-          echo "BINDGEN_EXTRA_CLANG_ARGS=-I/usr/include/linux -I/usr/include --verbose" >> $GITHUB_ENV
-          echo "V4L2_SYS_INCLUDE_PATH=/usr/include" >> $GITHUB_ENV
-          echo "DOCS_RS=1" >> $GITHUB_ENV
-
       - name: Install
         uses: dtolnay/rust-toolchain@stable
         if: ${{ !matrix.settings.docker }}
@@ -117,21 +79,6 @@ jobs:
             target/
           key: ${{ matrix.settings.target }}-cargo-${{ matrix.settings.host }}
 
-      - uses: goto-bus-stop/setup-zig@v2
-        if: ${{ matrix.settings.target == 'armv7-unknown-linux-gnueabihf' || matrix.settings.target == 'armv7-unknown-linux-musleabihf' }}
-        with:
-          version: 0.11.0
-
-      - name: Setup toolchain
-        run: ${{ matrix.settings.setup }}
-        if: ${{ matrix.settings.setup }}
-        shell: bash
-
-      - name: Setup node x86
-        if: matrix.settings.target == 'i686-pc-windows-msvc'
-        run: npm config set target_arch ia32
-        shell: bash
-
       - name: Install dependencies
         run: npm install
 
@@ -141,13 +88,96 @@ jobs:
           npm install
         shell: bash
 
-      - name: Build in docker
+      # FIX: Add V4L2 patch to WORKSPACE root (not local Cargo.toml)
+      - name: Fix V4L2 bindgen issue at workspace root
+        if: matrix.settings.docker
+        run: |
+          echo "🔧 Adding V4L2 bindgen patch to workspace root..."
+          
+          # Add patch to the WORKSPACE root Cargo.toml
+          cat >> Cargo.toml << 'EOF'
+
+# Fix v4l2-sys-mit bindgen anonymous union issue  
+[patch.crates-io]
+bindgen = "0.69.4"
+v4l2-sys-mit = "0.3.0"
+EOF
+          
+          echo "✅ Added patch to workspace root:"
+          tail -5 Cargo.toml
+
+      - name: Build in docker (V4L2 Fixed)
         uses: addnab/docker-run-action@v3
         if: ${{ matrix.settings.docker }}
         with:
           image: ${{ matrix.settings.docker }}
           options: '--user 0:0 -v ${{ github.workspace }}/.cargo-cache:/root/.cargo/registry/cache -v ${{ github.workspace }}/.cargo:/root/.cargo/registry/index -v ${{ github.workspace }}:/build -w /build'
-          run: ${{ matrix.settings.build }}
+          run: |-
+            set -e
+            
+            echo "🐧 Ubuntu 22.04 build with V4L2 fix..."
+            
+            # Install essentials
+            apt-get update
+            apt-get install -y curl build-essential git pkg-config
+            
+            # Install Node.js 20
+            curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+            apt-get install -y nodejs
+            
+            # Install Rust stable
+            curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable
+            source /root/.cargo/env
+            rustup target add x86_64-unknown-linux-gnu
+            
+            # Install system dependencies (Ubuntu 22.04 has better V4L2 headers)
+            apt-get install -y \
+              libpipewire-0.3-dev \
+              libasound2-dev \
+              libpulse-dev \
+              libjack-jackd2-dev \
+              libssl-dev \
+              libv4l-dev \
+              clang \
+              libclang-dev \
+              ffmpeg \
+              libavcodec-dev \
+              libavformat-dev \
+              libavutil-dev \
+              libswscale-dev \
+              libswresample-dev \
+              linux-libc-dev
+            
+            # Set environment for compatibility
+            export LIBCLANG_PATH="/usr/lib/x86_64-linux-gnu"
+            export BINDGEN_EXTRA_CLANG_ARGS="-I/usr/include/linux -I/usr/include/x86_64-linux-gnu -I/usr/include"
+            export PKG_CONFIG_ALLOW_CROSS=1
+            export PKG_CONFIG_ALLOW_SYSTEM_CFLAGS=1
+            export PKG_CONFIG_ALLOW_SYSTEM_LIBS=1
+            export RUST_BACKTRACE=1
+            
+            # Verify workspace patch exists
+            echo "🔍 Workspace patches:"
+            grep -A 3 "\[patch.crates-io\]" Cargo.toml || echo "No patches found"
+            
+            # Build with workspace patches
+            cd apps/node
+            
+            # Clean and regenerate with patches
+            cargo clean
+            npm install
+            
+            # Update Cargo.lock to apply workspace patches
+            echo "🔄 Applying workspace patches..."
+            cargo update
+            
+            # Build
+            echo "🔨 Building with patched dependencies..."
+            npx napi build --platform --release --target x86_64-unknown-linux-gnu
+            
+            # Verify and strip
+            ls -la *.node
+            strip *.node
 
       - name: Build
         run: ${{ matrix.settings.build }}
@@ -156,10 +186,6 @@ jobs:
           PKG_CONFIG_ALLOW_SYSTEM_CFLAGS: 1
           PKG_CONFIG_ALLOW_SYSTEM_LIBS: 1
           RUST_TARGET: ${{ matrix.settings.target }}
-          LIBCLANG_PATH: ${{ runner.os == 'Linux' && '/usr/lib/llvm-14/lib' || '' }}
-          BINDGEN_EXTRA_CLANG_ARGS: ${{ runner.os == 'Linux' && '-I/usr/include/linux -I/usr/include --verbose' || '' }}
-          V4L2_SYS_INCLUDE_PATH: ${{ runner.os == 'Linux' && '/usr/include' || '' }}
-          DOCS_RS: ${{ runner.os == 'Linux' && '1' || '' }}
         shell: bash
 
       - name: Upload artifact
