@@ -1,7 +1,7 @@
+use cap_media::sources::{list_screens, list_windows, ScreenCaptureTarget};
+use cap_recording::{spawn_studio_recording_actor, RecordingBaseInputs, StudioRecordingHandle};
 use napi::bindgen_prelude::*;
 use napi_derive::napi;
-use cap_recording::{spawn_studio_recording_actor, RecordingBaseInputs, StudioRecordingHandle};
-use cap_media::sources::{ScreenCaptureTarget, list_screens, list_windows};
 use std::path::PathBuf;
 use std::sync::Arc;
 use tokio::sync::Mutex;
@@ -15,7 +15,7 @@ pub struct CapRecorder {
 pub struct RecordingConfig {
     pub output_path: String,
     pub screen_id: Option<u32>,
-    pub window_id: Option<u32>, 
+    pub window_id: Option<u32>,
     pub capture_system_audio: Option<bool>,
     pub fps: Option<u32>,
 }
@@ -36,7 +36,10 @@ impl CapRecorder {
         } else if let Some(window_id) = config.window_id {
             ScreenCaptureTarget::Window { id: window_id }
         } else {
-            return Err(Error::new(Status::InvalidArg, "Must specify screen_id or window_id"));
+            return Err(Error::new(
+                Status::InvalidArg,
+                "Must specify screen_id or window_id",
+            ));
         };
 
         let recording_id = uuid::Uuid::new_v4().to_string();
@@ -52,11 +55,16 @@ impl CapRecorder {
             recording_id,
             output_path,
             base_inputs,
-            None, // Camera feed - could be added
+            None,  // Camera feed - could be added
             false, // Custom cursor capture
         )
         .await
-        .map_err(|e| Error::new(Status::GenericFailure, format!("Failed to start recording: {}", e)))?;
+        .map_err(|e| {
+            Error::new(
+                Status::GenericFailure,
+                format!("Failed to start recording: {}", e),
+            )
+        })?;
 
         {
             let mut handle_guard = self.handle.lock().await;
@@ -73,17 +81,17 @@ impl CapRecorder {
             // Add a timeout to prevent hanging
             let stop_future = handle.stop();
             let timeout_duration = std::time::Duration::from_secs(30);
-            
+
             match tokio::time::timeout(timeout_duration, stop_future).await {
-                Ok(Ok(completed)) => {
-                    Ok(completed.project_path.to_string_lossy().to_string())
-                }
-                Ok(Err(e)) => {
-                    Err(Error::new(Status::GenericFailure, format!("Failed to stop recording: {}", e)))
-                }
-                Err(_) => {
-                    Err(Error::new(Status::GenericFailure, "Stop recording timed out after 30 seconds"))
-                }
+                Ok(Ok(completed)) => Ok(completed.project_path.to_string_lossy().to_string()),
+                Ok(Err(e)) => Err(Error::new(
+                    Status::GenericFailure,
+                    format!("Failed to stop recording: {}", e),
+                )),
+                Err(_) => Err(Error::new(
+                    Status::GenericFailure,
+                    "Stop recording timed out after 30 seconds",
+                )),
             }
         } else {
             Err(Error::new(Status::InvalidArg, "No active recording"))
@@ -94,8 +102,9 @@ impl CapRecorder {
     pub async fn pause_recording(&self) -> Result<()> {
         let handle_guard = self.handle.lock().await;
         if let Some(handle) = handle_guard.as_ref() {
-            handle.pause().await
-                .map_err(|e| Error::new(Status::GenericFailure, format!("Failed to pause: {}", e)))?;
+            handle.pause().await.map_err(|e| {
+                Error::new(Status::GenericFailure, format!("Failed to pause: {}", e))
+            })?;
         }
         Ok(())
     }
@@ -104,8 +113,9 @@ impl CapRecorder {
     pub async fn resume_recording(&self) -> Result<()> {
         let handle_guard = self.handle.lock().await;
         if let Some(handle) = handle_guard.as_ref() {
-            handle.resume().await
-                .map_err(|e| Error::new(Status::GenericFailure, format!("Failed to resume: {}", e)))?;
+            handle.resume().await.map_err(|e| {
+                Error::new(Status::GenericFailure, format!("Failed to resume: {}", e))
+            })?;
         }
         Ok(())
     }
@@ -114,8 +124,9 @@ impl CapRecorder {
     pub async fn cancel_recording(&self) -> Result<()> {
         let mut handle_guard = self.handle.lock().await;
         if let Some(handle) = handle_guard.take() {
-            handle.cancel().await
-                .map_err(|e| Error::new(Status::GenericFailure, format!("Failed to cancel: {}", e)))?;
+            handle.cancel().await.map_err(|e| {
+                Error::new(Status::GenericFailure, format!("Failed to cancel: {}", e))
+            })?;
         }
         Ok(())
     }

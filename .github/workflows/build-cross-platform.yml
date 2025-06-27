@@ -62,10 +62,17 @@ jobs:
       - name: Setup macOS dependencies
         if: contains(matrix.settings.host, 'macos')
         run: |
-          brew install ffmpeg pkg-config
+          # Install Xcode command line tools
+          sudo xcode-select --install || true
+          
+          # Install Homebrew dependencies
+          brew install ffmpeg pkg-config llvm
+          
+          # Set up environment variables
           echo "PKG_CONFIG_PATH=$(brew --prefix)/lib/pkgconfig:$(brew --prefix ffmpeg)/lib/pkgconfig" >> $GITHUB_ENV
           echo "LIBRARY_PATH=$(brew --prefix)/lib:$(brew --prefix ffmpeg)/lib" >> $GITHUB_ENV
           echo "CPATH=$(brew --prefix)/include:$(brew --prefix ffmpeg)/include" >> $GITHUB_ENV
+          echo "LIBCLANG_PATH=$(brew --prefix llvm)/lib" >> $GITHUB_ENV
           
       - name: Setup Linux dependencies
         if: contains(matrix.settings.host, 'ubuntu')
@@ -81,6 +88,8 @@ jobs:
             libssl-dev \
             libv4l-dev \
             libclang-dev \
+            clang \
+            llvm-dev \
             ffmpeg \
             libavcodec-dev \
             libavformat-dev \
@@ -92,14 +101,27 @@ jobs:
             libgtk-3-dev \
             libayatana-appindicator3-dev \
             librsvg2-dev
+          
+          # Set up libclang path
           echo "LIBCLANG_PATH=/usr/lib/llvm-14/lib" >> $GITHUB_ENV
           echo "BINDGEN_EXTRA_CLANG_ARGS=-I/usr/include/linux" >> $GITHUB_ENV
           
-      - name: Setup Linux ARM cross compilation
-        if: contains(matrix.settings.target, 'aarch64') && contains(matrix.settings.host, 'ubuntu')
+      - name: Setup Windows dependencies
+        if: contains(matrix.settings.host, 'windows')
         run: |
-          echo "ARM64 cross-compilation temporarily disabled due to system dependency complexity"
-          exit 1
+          # Install pkg-config
+          choco install pkgconfiglite -y
+          
+          # Install vcpkg
+          git clone https://github.com/Microsoft/vcpkg.git C:\vcpkg
+          C:\vcpkg\bootstrap-vcpkg.bat
+          
+          # Install FFmpeg via vcpkg
+          C:\vcpkg\vcpkg.exe install ffmpeg:x64-windows-static
+          
+          # Set environment variables
+          echo "VCPKG_ROOT=C:\vcpkg" >> $env:GITHUB_ENV
+          echo "PKG_CONFIG_PATH=C:\vcpkg\installed\x64-windows-static\lib\pkgconfig" >> $env:GITHUB_ENV
           
       - name: Install dependencies
         working-directory: apps/node
@@ -112,8 +134,6 @@ jobs:
           RUST_TARGET: ${{ matrix.settings.target }}
           PKG_CONFIG_ALLOW_SYSTEM_CFLAGS: 1
           PKG_CONFIG_ALLOW_SYSTEM_LIBS: 1
-          LIBCLANG_PATH: ${{ contains(matrix.settings.host, 'ubuntu') && '/usr/lib/llvm-14/lib' || '' }}
-          BINDGEN_EXTRA_CLANG_ARGS: ${{ contains(matrix.settings.host, 'ubuntu') && '-I/usr/include/linux' || '' }}
         
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
