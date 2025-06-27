@@ -1,0 +1,160 @@
+name: Build Cross-Platform Binaries
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['apps/node/**']
+  pull_request:
+    paths: ['apps/node/**']
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        settings:
+          - host: macos-latest
+            target: x86_64-apple-darwin
+            build: npm run build
+          - host: macos-latest
+            target: aarch64-apple-darwin
+            build: npm run build
+          - host: windows-latest
+            target: x86_64-pc-windows-msvc
+            build: npm run build
+          - host: windows-latest
+            target: i686-pc-windows-msvc
+            build: npm run build
+          - host: windows-latest
+            target: aarch64-pc-windows-msvc
+            build: npm run build
+          - host: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            build: npm run build
+          - host: ubuntu-latest
+            target: aarch64-unknown-linux-gnu
+            build: npm run build
+          - host: ubuntu-latest
+            target: armv7-unknown-linux-gnueabihf
+            build: npm run build
+          - host: ubuntu-latest
+            target: x86_64-unknown-linux-musl
+            build: npm run build
+          - host: ubuntu-latest
+            target: aarch64-unknown-linux-musl
+            build: npm run build
+          - host: ubuntu-latest
+            target: armv7-unknown-linux-musleabihf
+            build: npm run build
+
+    name: Build ${{ matrix.settings.target }}
+    runs-on: ${{ matrix.settings.host }}
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
+          
+      - name: Setup node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: pnpm
+          
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.settings.target }}
+          
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ matrix.settings.target }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          
+      - name: Setup Linux cross compilation
+        if: contains(matrix.settings.host, 'ubuntu')
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-multilib
+          
+      - name: Setup Linux ARM cross compilation
+        if: contains(matrix.settings.target, 'arm')
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-arm-linux-gnueabihf gcc-aarch64-linux-gnu
+          
+      - name: Setup Linux musl cross compilation
+        if: contains(matrix.settings.target, 'musl')
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y musl-tools
+          
+      - name: Install dependencies
+        working-directory: apps/node
+        run: pnpm install
+        
+      - name: Build
+        working-directory: apps/node
+        run: npx napi build --platform --release --target ${{ matrix.settings.target }}
+        
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: binaries-${{ matrix.settings.target }}
+          path: apps/node/*.node
+          if-no-files-found: error
+
+  publish:
+    name: Publish
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.event_name == 'workflow_dispatch'
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
+          
+      - name: Setup node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: pnpm
+          registry-url: https://registry.npmjs.org/
+          
+      - name: Install dependencies
+        working-directory: apps/node
+        run: pnpm install
+        
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: apps/node/artifacts
+          
+      - name: Move binaries to correct location
+        working-directory: apps/node
+        run: |
+          for dir in artifacts/binaries-*; do
+            if [ -d "$dir" ]; then
+              mv "$dir"/*.node . 2>/dev/null || true
+            fi
+          done
+          ls -la *.node
+          
+      - name: Publish to npm
+        working-directory: apps/node
+        run: npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

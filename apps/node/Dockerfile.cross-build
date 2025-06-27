@@ -1,0 +1,57 @@
+FROM rust:1.81
+
+# Install Node.js and pnpm
+RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - \
+    && apt-get install -y nodejs \
+    && npm install -g pnpm
+
+# Install cross-compilation tools
+RUN apt-get update && apt-get install -y \
+    gcc-multilib \
+    gcc-mingw-w64 \
+    gcc-aarch64-linux-gnu \
+    gcc-arm-linux-gnueabihf \
+    musl-tools \
+    pkg-config \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Rust targets
+RUN rustup target add \
+    x86_64-unknown-linux-gnu \
+    aarch64-unknown-linux-gnu \
+    armv7-unknown-linux-gnueabihf \
+    x86_64-unknown-linux-musl \
+    aarch64-unknown-linux-musl \
+    armv7-unknown-linux-musleabihf \
+    x86_64-pc-windows-gnu \
+    i686-pc-windows-gnu
+
+# Set up cargo config for cross-compilation
+RUN mkdir -p /root/.cargo && echo '\
+[target.aarch64-unknown-linux-gnu]\n\
+linker = "aarch64-linux-gnu-gcc"\n\
+\n\
+[target.armv7-unknown-linux-gnueabihf]\n\
+linker = "arm-linux-gnueabihf-gcc"\n\
+\n\
+[target.x86_64-unknown-linux-musl]\n\
+linker = "musl-gcc"\n\
+\n\
+[target.aarch64-unknown-linux-musl]\n\
+linker = "aarch64-linux-musl-gcc"\n\
+\n\
+[target.armv7-unknown-linux-musleabihf]\n\
+linker = "arm-linux-musleabihf-gcc"\n\
+\n\
+[target.x86_64-pc-windows-gnu]\n\
+linker = "x86_64-w64-mingw32-gcc"\n\
+\n\
+[target.i686-pc-windows-gnu]\n\
+linker = "i686-w64-mingw32-gcc"\n\
+' > /root/.cargo/config.toml
+
+WORKDIR /workspace
+COPY . .
+
+# Build script that builds for all supported Linux targets
+CMD ["bash", "-c", "cd apps/node && pnpm install && ./build-cross-platform.sh"]

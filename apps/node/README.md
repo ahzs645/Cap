@@ -1,4 +1,4 @@
-# @cap/recording
+# caprecorder
 
 A headless screen recording library powered by Cap, built with Rust and exposed to Node.js via NAPI.
 
@@ -16,13 +16,13 @@ A headless screen recording library powered by Cap, built with Rust and exposed 
 ## Installation
 
 ```bash
-npm install @cap/recording
+npm install caprecorder
 ```
 
 ## Quick Start
 
 ```javascript
-const { CapRecorder, listAvailableScreens, hasScreenCapturePermission } = require('@cap/recording');
+const { CapRecorder, listAvailableScreens, hasScreenCapturePermission } = require('caprecorder');
 
 async function recordScreen() {
   // Check permissions first
@@ -173,7 +173,7 @@ node examples.js pause    # Pause/resume example
 ### Screen Recording
 
 ```javascript
-const { CapRecorder, listAvailableScreens } = require('@cap/recording');
+const { CapRecorder, listAvailableScreens } = require('caprecorder');
 
 const recorder = new CapRecorder();
 const screens = listAvailableScreens();
@@ -195,7 +195,7 @@ setTimeout(async () => {
 ### Window Recording
 
 ```javascript
-const { CapRecorder, listAvailableWindows } = require('@cap/recording');
+const { CapRecorder, listAvailableWindows } = require('caprecorder');
 
 const recorder = new CapRecorder();
 const windows = listAvailableWindows();

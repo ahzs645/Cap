@@ -1,12 +1,17 @@
 {
-  "name": "@cap/recording",
-  "version": "0.1.0",
-  "description": "Headless screen recording library powered by Cap",
+  "name": "@firstform/caprecorder",
+  "version": "1.0.1",
+  "description": "A headless screen recording library powered by Cap, built with Rust and exposed to Node.js via NAPI. High-performance screen and window capture with system audio recording support.",
   "main": "index.js",
   "types": "index.d.ts",
   "scripts": {
+    "artifacts": "napi artifacts",
     "build": "napi build --platform --release",
     "build:debug": "napi build --platform",
+    "build:cross-platform": "./build-cross-platform.sh",
+    "build:windows": "napi build --platform --release --target x86_64-pc-windows-msvc && napi build --platform --release --target i686-pc-windows-msvc && napi build --platform --release --target aarch64-pc-windows-msvc",
+    "build:linux": "napi build --platform --release --target x86_64-unknown-linux-gnu && napi build --platform --release --target aarch64-unknown-linux-gnu && napi build --platform --release --target x86_64-unknown-linux-musl && napi build --platform --release --target aarch64-unknown-linux-musl",
+    "build:android": "napi build --platform --release --target aarch64-linux-android && napi build --platform --release --target armv7-linux-androideabi",
     "prepublishOnly": "napi prepublish -t npm",
     "test": "node tests/index.js",
     "test:basic": "node tests/index.js basic",
@@ -17,28 +22,61 @@
     "examples:window": "node examples.js window",
     "examples:audio": "node examples.js audio",
     "examples:pause": "node examples.js pause",
-    "cleanup": "node cleanup.js"
+    "cleanup": "node cleanup.js",
+    "version": "napi version"
   },
-  "keywords": ["screen-recording", "video", "capture", "headless", "cap"],
+  "keywords": [
+    "screen-recording",
+    "video",
+    "capture",
+    "headless",
+    "cap",
+    "recorder",
+    "screencapture",
+    "window-capture",
+    "system-audio",
+    "rust",
+    "napi",
+    "cross-platform"
+  ],
   "author": "Cap Software",
   "license": "MIT",
+  "homepage": "https://github.com/CapSoftware/Cap/tree/main/apps/node",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/CapSoftware/Cap.git",
+    "directory": "apps/node"
+  },
+  "bugs": {
+    "url": "https://github.com/CapSoftware/Cap/issues"
+  },
   "devDependencies": {
     "@napi-rs/cli": "^2.18.0"
   },
   "engines": {
     "node": ">= 16"
   },
-  "os": ["darwin", "linux", "win32"],
+  "os": ["darwin", "linux", "win32", "freebsd", "android"],
+  "cpu": ["x64", "arm64", "ia32", "arm"],
   "napi": {
     "name": "cap-node",
     "triples": {
       "defaults": true,
       "additional": [
         "x86_64-pc-windows-msvc",
+        "i686-pc-windows-msvc",
+        "aarch64-pc-windows-msvc",
         "x86_64-apple-darwin",
         "aarch64-apple-darwin",
         "x86_64-unknown-linux-gnu",
-        "aarch64-unknown-linux-gnu"
+        "aarch64-unknown-linux-gnu",
+        "armv7-unknown-linux-gnueabihf",
+        "x86_64-unknown-linux-musl",
+        "aarch64-unknown-linux-musl",
+        "armv7-unknown-linux-musleabihf",
+        "x86_64-unknown-freebsd",
+        "aarch64-linux-android",
+        "armv7-linux-androideabi"
       ]
     }
   },
@@ -47,8 +85,25 @@
     "access": "public"
   },
   "files": [
-    "index.js",
     "index.d.ts",
+    "index.js",
     "*.node"
-  ]
+  ],
+  "optionalDependencies": {
+    "@firstform/caprecorder-win32-x64-msvc": "1.0.1",
+    "@firstform/caprecorder-win32-ia32-msvc": "1.0.1",
+    "@firstform/caprecorder-win32-arm64-msvc": "1.0.1",
+    "@firstform/caprecorder-darwin-x64": "1.0.1",
+    "@firstform/caprecorder-darwin-arm64": "1.0.1",
+    "@firstform/caprecorder-darwin-universal": "1.0.1",
+    "@firstform/caprecorder-linux-x64-gnu": "1.0.1",
+    "@firstform/caprecorder-linux-x64-musl": "1.0.1",
+    "@firstform/caprecorder-linux-arm64-gnu": "1.0.1",
+    "@firstform/caprecorder-linux-arm64-musl": "1.0.1",
+    "@firstform/caprecorder-linux-arm-gnueabihf": "1.0.1",
+    "@firstform/caprecorder-linux-arm-musleabihf": "1.0.1",
+    "@firstform/caprecorder-freebsd-x64": "1.0.1",
+    "@firstform/caprecorder-android-arm64": "1.0.1",
+    "@firstform/caprecorder-android-arm-eabi": "1.0.1"
+  }
 }
