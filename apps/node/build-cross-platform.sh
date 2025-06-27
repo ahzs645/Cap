@@ -27,7 +27,7 @@ build_target() {
     
     echo -e "${BLUE}Building for ${name} (${target})...${NC}"
     
-    if npx napi build --platform --release --target "$target"; then
+    if npx @napi-rs/cli build --platform --release --target "$target"; then
         echo -e "${GREEN}✅ Successfully built for ${name}${NC}"
         return 0
     else
@@ -58,13 +58,14 @@ case "$OS" in
         ;;
     "Linux")
         echo -e "${YELLOW}Building additional Linux targets...${NC}"
-        # Focus on x64 only for now due to complexity of ARM cross-compilation
-        echo -e "${BLUE}Linux ARM64 builds are handled by CI/CD for reliability${NC}"
+        echo -e "${BLUE}❌ Native Linux cross-compilation requires complex setup${NC}"
+        echo -e "${BLUE}💡 Use './build-linux-docker.sh' for reliable Linux builds${NC}"
+        echo -e "${BLUE}Or run this on a Linux machine/CI for native builds${NC}"
         ;;
     "MINGW"*|"MSYS"*|"CYGWIN"*)
         echo -e "${YELLOW}Building additional Windows targets...${NC}"
-        # Focus on x64 for reliability
-        echo -e "${BLUE}Additional Windows targets are handled by CI/CD for reliability${NC}"
+        echo -e "${BLUE}❌ Windows cross-compilation requires MinGW setup${NC}"
+        echo -e "${BLUE}💡 Use GitHub Actions or a Windows machine for Windows builds${NC}"
         ;;
 esac
 
