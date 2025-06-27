@@ -90,18 +90,19 @@ jobs:
           # Verify FFmpeg is found
           echo "✅ FFmpeg version: $(pkg-config --modversion libavcodec)"
           
-      - name: Setup Linux dependencies (Simple V4L2 Fix)
+      - name: Setup Linux dependencies (Complete FFmpeg)
         if: contains(matrix.settings.host, 'ubuntu')
         run: |
           sudo apt-get update
           
-          # Install packages
+          # Install ALL FFmpeg libraries
           sudo apt-get install -y \
             build-essential pkg-config \
             libpipewire-0.3-dev libasound2-dev libpulse-dev \
-            libssl-dev libv4l-dev ffmpeg libavcodec-dev \
-            libavformat-dev libavutil-dev libswscale-dev \
-            libswresample-dev libavfilter-dev linux-libc-dev \
+            libssl-dev libv4l-dev ffmpeg \
+            libavcodec-dev libavformat-dev libavutil-dev \
+            libswscale-dev libswresample-dev libavfilter-dev \
+            libavdevice-dev linux-libc-dev \
             clang libclang-dev libclang1
 
           # libclang detection
@@ -112,7 +113,7 @@ jobs:
             fi
           done
 
-          # Fix V4L2 anonymous union issue
+          # Simpler bindgen args (V4L2 issue will remain for now)
           echo "BINDGEN_EXTRA_CLANG_ARGS=-I/usr/include -I/usr/include/x86_64-linux-gnu --target=x86_64-unknown-linux-gnu -D_GNU_SOURCE" >> $GITHUB_ENV
           echo "PKG_CONFIG_ALLOW_SYSTEM_CFLAGS=1" >> $GITHUB_ENV
           echo "PKG_CONFIG_ALLOW_SYSTEM_LIBS=1" >> $GITHUB_ENV
