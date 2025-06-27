@@ -164,7 +164,7 @@ echo "  PKG_CONFIG_ALLOW_SYSTEM_LIBS=$PKG_CONFIG_ALLOW_SYSTEM_LIBS"
 [ -n "$PKG_CONFIG_PATH" ] && echo "  PKG_CONFIG_PATH=$PKG_CONFIG_PATH"
 echo ""
 
-if npx napi build --platform --release --target "$TARGET"; then
+if npx @napi-rs/cli build --platform --release --target "$TARGET"; then
     echo "✅ Build successful!"
     echo ""
     echo "📁 Generated files:"

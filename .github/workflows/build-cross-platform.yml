@@ -107,7 +107,7 @@ jobs:
         
       - name: Build
         working-directory: apps/node
-        run: npx napi build --platform --release --target ${{ matrix.settings.target }}
+        run: npx @napi-rs/cli build --platform --release --target ${{ matrix.settings.target }}
         env:
           RUST_TARGET: ${{ matrix.settings.target }}
           PKG_CONFIG_ALLOW_SYSTEM_CFLAGS: 1

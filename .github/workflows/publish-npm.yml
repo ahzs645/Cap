@@ -23,19 +23,19 @@ jobs:
             target: x86_64-apple-darwin
             build: |
               cd apps/node
-              npx napi build --platform --release --target x86_64-apple-darwin
+              npx @napi-rs/cli build --platform --release --target x86_64-apple-darwin
               strip -x *.node
           - host: macos-14
             target: aarch64-apple-darwin
             build: |
               cd apps/node
-              npx napi build --platform --release --target aarch64-apple-darwin
+              npx @napi-rs/cli build --platform --release --target aarch64-apple-darwin
               strip -x *.node
           - host: windows-latest
             target: x86_64-pc-windows-msvc
             build: |
               cd apps/node
-              npx napi build --platform --release --target x86_64-pc-windows-msvc
+              npx @napi-rs/cli build --platform --release --target x86_64-pc-windows-msvc
           - host: ubuntu-latest
             target: x86_64-unknown-linux-gnu
             docker: ghcr.io/napi-rs/napi-rs/nodejs-rust:lts-debian
@@ -46,7 +46,7 @@ jobs:
               export LIBCLANG_PATH=/usr/lib/llvm-14/lib &&
               export BINDGEN_EXTRA_CLANG_ARGS="-I/usr/include/linux" &&
               cd apps/node &&
-              npx napi build --platform --release --target x86_64-unknown-linux-gnu &&
+              npx @napi-rs/cli build --platform --release --target x86_64-unknown-linux-gnu &&
               strip *.node
 
     name: stable - ${{ matrix.settings.target }} - node@20
