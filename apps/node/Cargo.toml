@@ -19,8 +19,9 @@ scap = { workspace = true }
 
 [build-dependencies]
 napi-build = "2"
-# Remove bindgen from here - it's handled by patch below
 
 [patch.crates-io]
-# Fix v4l2-sys-mit bindgen anonymous union issue
-bindgen = "0.69"
+# Fix the root cause: force newer v4l2-sys-mit that uses newer bindgen
+v4l2-sys-mit = { version = "0.3.0" }
+# Also patch bindgen to ensure consistency
+bindgen = { version = "0.69.4" }
