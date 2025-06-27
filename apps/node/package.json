@@ -8,8 +8,16 @@
     "build": "napi build --platform --release",
     "build:debug": "napi build --platform",
     "prepublishOnly": "napi prepublish -t npm",
-    "test": "node test.js",
-    "examples": "node examples.js"
+    "test": "node tests/index.js",
+    "test:basic": "node tests/index.js basic",
+    "test:audio": "node tests/index.js audio",
+    "test:advanced": "node tests/index.js advanced",
+    "examples": "node examples.js",
+    "examples:screen": "node examples.js screen",
+    "examples:window": "node examples.js window",
+    "examples:audio": "node examples.js audio",
+    "examples:pause": "node examples.js pause",
+    "cleanup": "node cleanup.js"
   },
   "keywords": ["screen-recording", "video", "capture", "headless", "cap"],
   "author": "Cap Software",

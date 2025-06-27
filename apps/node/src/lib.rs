@@ -9,7 +9,6 @@ use tokio::sync::Mutex;
 #[napi]
 pub struct CapRecorder {
     handle: Arc<Mutex<Option<StudioRecordingHandle>>>,
-    done_rx: Arc<Mutex<Option<tokio::sync::oneshot::Receiver<()>>>>,
 }
 
 #[napi(object)]
@@ -27,7 +26,6 @@ impl CapRecorder {
     pub fn new() -> Self {
         Self {
             handle: Arc::new(Mutex::new(None)),
-            done_rx: Arc::new(Mutex::new(None)),
         }
     }
 
@@ -50,7 +48,7 @@ impl CapRecorder {
             mic_feed: &None, // Could be extended to support mic
         };
 
-        let (handle, done_rx) = spawn_studio_recording_actor(
+        let (handle, _done_rx) = spawn_studio_recording_actor(
             recording_id,
             output_path,
             base_inputs,
@@ -65,11 +63,6 @@ impl CapRecorder {
             *handle_guard = Some(handle);
         }
 
-        {
-            let mut done_rx_guard = self.done_rx.lock().await;
-            *done_rx_guard = Some(done_rx);
-        }
-
         Ok(())
     }
 
@@ -77,10 +70,21 @@ impl CapRecorder {
     pub async fn stop_recording(&self) -> Result<String> {
         let mut handle_guard = self.handle.lock().await;
         if let Some(handle) = handle_guard.take() {
-            let completed = handle.stop().await
-                .map_err(|e| Error::new(Status::GenericFailure, format!("Failed to stop recording: {}", e)))?;
+            // Add a timeout to prevent hanging
+            let stop_future = handle.stop();
+            let timeout_duration = std::time::Duration::from_secs(30);
             
-            Ok(completed.project_path.to_string_lossy().to_string())
+            match tokio::time::timeout(timeout_duration, stop_future).await {
+                Ok(Ok(completed)) => {
+                    Ok(completed.project_path.to_string_lossy().to_string())
+                }
+                Ok(Err(e)) => {
+                    Err(Error::new(Status::GenericFailure, format!("Failed to stop recording: {}", e)))
+                }
+                Err(_) => {
+                    Err(Error::new(Status::GenericFailure, "Stop recording timed out after 30 seconds"))
+                }
+            }
         } else {
             Err(Error::new(Status::InvalidArg, "No active recording"))
         }
