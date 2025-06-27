@@ -10,8 +10,8 @@
     "build:debug": "napi build --platform",
     "build:cross-platform": "./build-cross-platform.sh",
     "build:windows": "napi build --platform --release --target x86_64-pc-windows-msvc && napi build --platform --release --target i686-pc-windows-msvc && napi build --platform --release --target aarch64-pc-windows-msvc",
-    "build:linux": "napi build --platform --release --target x86_64-unknown-linux-gnu && napi build --platform --release --target aarch64-unknown-linux-gnu && napi build --platform --release --target x86_64-unknown-linux-musl && napi build --platform --release --target aarch64-unknown-linux-musl",
-    "build:android": "napi build --platform --release --target aarch64-linux-android && napi build --platform --release --target armv7-linux-androideabi",
+    "build:linux": "napi build --platform --release --target x86_64-unknown-linux-gnu && napi build --platform --release --target aarch64-unknown-linux-gnu",
+    "build:macos": "napi build --platform --release --target x86_64-apple-darwin && napi build --platform --release --target aarch64-apple-darwin",
     "prepublishOnly": "napi prepublish -t npm",
     "test": "node tests/index.js",
     "test:basic": "node tests/index.js basic",
@@ -56,8 +56,8 @@
   "engines": {
     "node": ">= 16"
   },
-  "os": ["darwin", "linux", "win32", "freebsd", "android"],
-  "cpu": ["x64", "arm64", "ia32", "arm"],
+  "os": ["darwin", "linux", "win32"],
+  "cpu": ["x64", "arm64", "ia32"],
   "napi": {
     "name": "cap-node",
     "triples": {
@@ -69,14 +69,7 @@
         "x86_64-apple-darwin",
         "aarch64-apple-darwin",
         "x86_64-unknown-linux-gnu",
-        "aarch64-unknown-linux-gnu",
-        "armv7-unknown-linux-gnueabihf",
-        "x86_64-unknown-linux-musl",
-        "aarch64-unknown-linux-musl",
-        "armv7-unknown-linux-musleabihf",
-        "x86_64-unknown-freebsd",
-        "aarch64-linux-android",
-        "armv7-linux-androideabi"
+        "aarch64-unknown-linux-gnu"
       ]
     }
   },
@@ -97,13 +90,6 @@
     "@firstform/caprecorder-darwin-arm64": "1.0.1",
     "@firstform/caprecorder-darwin-universal": "1.0.1",
     "@firstform/caprecorder-linux-x64-gnu": "1.0.1",
-    "@firstform/caprecorder-linux-x64-musl": "1.0.1",
-    "@firstform/caprecorder-linux-arm64-gnu": "1.0.1",
-    "@firstform/caprecorder-linux-arm64-musl": "1.0.1",
-    "@firstform/caprecorder-linux-arm-gnueabihf": "1.0.1",
-    "@firstform/caprecorder-linux-arm-musleabihf": "1.0.1",
-    "@firstform/caprecorder-freebsd-x64": "1.0.1",
-    "@firstform/caprecorder-android-arm64": "1.0.1",
-    "@firstform/caprecorder-android-arm-eabi": "1.0.1"
+    "@firstform/caprecorder-linux-arm64-gnu": "1.0.1"
   }
 }

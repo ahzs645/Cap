@@ -4,20 +4,19 @@ This guide explains how to build native binaries for all supported platforms.
 
 ## Supported Platforms
 
-The `@firstform/caprecorder` package supports:
+The `@firstform/caprecorder` package supports the most common and reliable platforms:
 
 ### Operating Systems
 - **macOS** (Darwin) - Intel x64 and Apple Silicon ARM64
 - **Windows** - x64, x86 (32-bit), and ARM64  
-- **Linux** - x64 and ARM64 (GNU and musl variants)
-- **FreeBSD** - x64
-- **Android** - ARM64 and ARM
+- **Linux** - x64 and ARM64 (GNU libc)
 
 ### Architectures  
 - **x64** (Intel/AMD 64-bit)
 - **arm64** (Apple Silicon, ARM64)
-- **ia32** (32-bit Intel)
-- **arm** (32-bit ARM)
+- **ia32** (32-bit Intel - Windows only)
+
+**Note**: We focus on the most common platforms for reliability. Specialized platforms like musl Linux, FreeBSD, and Android require complex cross-compilation setups and are not included in the standard distribution.
 
 ## Build Methods
 
@@ -78,11 +77,22 @@ npm run build
 #### Linux
 ```bash
 # Install Rust, Node.js, and build tools
-sudo apt-get install build-essential pkg-config
+sudo apt-get update
+sudo apt-get install -y \
+  build-essential \
+  pkg-config \
+  libpipewire-0.3-dev \
+  libasound2-dev \
+  libpulse-dev \
+  libjack-jackd2-dev \
+  libssl-dev
+
 rustup target add x86_64-unknown-linux-gnu aarch64-unknown-linux-gnu
 npm install
 npm run build
 ```
+
+**Important**: Linux builds require PipeWire development libraries for audio capture. If you get `libspa-sys` build errors, make sure `libpipewire-0.3-dev` is installed.
 
 ### Method 4: Docker Cross-Compilation
 
@@ -102,9 +112,12 @@ The package uses NAPI-RS for native bindings and includes:
 {
   "optionalDependencies": {
     "@firstform/caprecorder-win32-x64-msvc": "1.0.1",
+    "@firstform/caprecorder-win32-ia32-msvc": "1.0.1", 
+    "@firstform/caprecorder-win32-arm64-msvc": "1.0.1",
+    "@firstform/caprecorder-darwin-x64": "1.0.1",
     "@firstform/caprecorder-darwin-arm64": "1.0.1",
     "@firstform/caprecorder-linux-x64-gnu": "1.0.1",
-    // ... more platform-specific packages
+    "@firstform/caprecorder-linux-arm64-gnu": "1.0.1"
   }
 }
 ```
@@ -154,21 +167,26 @@ Cross-compilation can fail due to:
 1. **`pkg-config` errors**: Missing development libraries
    ```bash
    # Linux
-   sudo apt-get install pkg-config build-essential
+   sudo apt-get install pkg-config build-essential libpipewire-0.3-dev
    
    # macOS  
    brew install pkg-config
    ```
 
-2. **Missing Rust targets**:
+2. **`libspa-sys` errors on Linux**: Missing PipeWire development libraries
+   ```bash
+   sudo apt-get install libpipewire-0.3-dev libasound2-dev libpulse-dev
+   ```
+
+3. **Missing Rust targets**:
    ```bash
    rustup target add <target-triple>
    ```
 
-3. **FFmpeg cross-compilation**: Complex multimedia dependencies
-   - Use pre-built FFmpeg libraries
-   - Build on native platforms
-   - Use containerized builds
+4. **Cross-compilation failures**: 
+   - Use GitHub Actions for reliable cross-platform builds
+   - Build natively on target platforms
+   - Some combinations (like musl cross-compilation) require complex setups
 
 ## Development Tips
 
@@ -182,9 +200,9 @@ Cross-compilation can fail due to:
 - `npm run build` - Build for current platform
 - `npm run build:debug` - Debug build for current platform  
 - `npm run build:cross-platform` - Attempt cross-platform build
-- `npm run build:windows` - Build Windows targets
-- `npm run build:linux` - Build Linux targets
-- `npm run build:android` - Build Android targets
+- `npm run build:windows` - Build Windows targets (x64, x86, ARM64)
+- `npm run build:linux` - Build Linux targets (x64, ARM64)
+- `npm run build:macos` - Build macOS targets (Intel, Apple Silicon)
 - `npm run prepublishOnly` - Prepare for npm publishing
 - `npm test` - Run tests with current binary
 
