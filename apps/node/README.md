@@ -5,19 +5,33 @@ A headless screen recording library powered by Cap, built with Rust and exposed 
 ## Features
 
 - 🎥 High-performance screen recording
-- 🖥️ Support for both screen and window capture
+- 🖥️ Support for both screen and window capture  
 - 🔊 System audio recording
 - 🎯 Cross-platform (macOS, Windows, Linux)
 - ⚡ Native Rust performance
 - 🚀 Async/await API
 - 🎮 Headless operation (no GUI required)
 - ⏸️ Pause/resume functionality
+- 📦 Automatic platform detection and binary loading
+
+## Platform Support
+
+| Platform | Architecture | Status |
+|----------|-------------|--------|
+| macOS | x64 (Intel) | ✅ Supported |
+| macOS | ARM64 (Apple Silicon) | ✅ Supported |
+| Windows | x64 | ✅ Supported |
+| Linux | x64 | ✅ Supported |
+
+The package automatically detects your platform and loads the appropriate native binary.
 
 ## Installation
 
 ```bash
 npm install caprecorder
 ```
+
+**Note**: The package includes pre-built native binaries for all supported platforms. No compilation required!
 
 ## Quick Start
 
@@ -377,6 +391,39 @@ These are deprecation warnings from FFmpeg and don't affect functionality, but i
 - Sufficient disk space for recordings
 - For audio recording: system audio output
 
+## Development
+
+### Building from Source
+
+If you need to build from source or contribute to the project:
+
+```bash
+# Clone the repository
+git clone https://github.com/CapSoftware/Cap.git
+cd Cap/apps/node
+
+# Test local build
+./test-builds-local.sh
+
+# Build for current platform
+npm run build
+
+# Build for all platforms (requires Docker)
+./build-cross-platform.sh
+```
+
+For detailed build instructions, see [BUILD.md](./BUILD.md).
+
+### Testing
+
+For local development testing, use:
+
+```bash
+./test-builds-local.sh
+```
+
+This will check dependencies and build the package for your current platform.
+
 ## License
 
 MIT License - see LICENSE file for details.
@@ -384,4 +431,8 @@ MIT License - see LICENSE file for details.
 ## Contributing
 
 This package is part of the larger Cap project. For contributing guidelines, please see the main [Cap repository](https://github.com/CapSoftware/Cap).
+
+For build-related contributions, see:
+- [BUILD.md](./BUILD.md) - Comprehensive build guide
+- [LOCAL_TESTING.md](./LOCAL_TESTING.md) - Quick local testing guide
 

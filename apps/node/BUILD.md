@@ -8,15 +8,14 @@ The `@firstform/caprecorder` package supports the most common and reliable platf
 
 ### Operating Systems
 - **macOS** (Darwin) - Intel x64 and Apple Silicon ARM64
-- **Windows** - x64, x86 (32-bit), and ARM64  
-- **Linux** - x64 and ARM64 (GNU libc)
+- **Windows** - x64
+- **Linux** - x64 (GNU libc)
 
 ### Architectures  
 - **x64** (Intel/AMD 64-bit)
-- **arm64** (Apple Silicon, ARM64)
-- **ia32** (32-bit Intel - Windows only)
+- **arm64** (Apple Silicon - macOS only)
 
-**Note**: We focus on the most common platforms for reliability. Specialized platforms like musl Linux, FreeBSD, and Android require complex cross-compilation setups and are not included in the standard distribution.
+**Note**: We focus on the most reliable and commonly used platforms. Additional platforms like Windows ARM64, Linux ARM64, and specialized variants can be added as demand grows and build infrastructure improves.
 
 ## Build Methods
 
@@ -42,6 +41,9 @@ git push origin main
 For local development and testing:
 
 ```bash
+# Test build on current platform (recommended first step)
+./test-builds-local.sh
+
 # Build for current platform only
 npm run build
 
@@ -92,7 +94,27 @@ npm install
 npm run build
 ```
 
-**Important**: Linux builds require PipeWire development libraries for audio capture. If you get `libspa-sys` build errors, make sure `libpipewire-0.3-dev` is installed.
+**Important**: Linux builds require PipeWire, V4L2, and FFmpeg development libraries for audio/video capture. If you get build errors, make sure all dependencies are installed:
+
+```bash
+sudo apt-get install -y \
+  pkg-config \
+  libpipewire-0.3-dev \
+  libasound2-dev \
+  libpulse-dev \
+  libjack-jackd2-dev \
+  libssl-dev \
+  libv4l-dev \
+  libclang-dev \
+  ffmpeg \
+  libavcodec-dev \
+  libavformat-dev \
+  libavutil-dev \
+  libswscale-dev \
+  libswresample-dev \
+  linux-libc-dev \
+  build-essential
+```
 
 ### Method 4: Docker Cross-Compilation
 
@@ -111,13 +133,10 @@ The package uses NAPI-RS for native bindings and includes:
 ```json
 {
   "optionalDependencies": {
-    "@firstform/caprecorder-win32-x64-msvc": "1.0.1",
-    "@firstform/caprecorder-win32-ia32-msvc": "1.0.1", 
-    "@firstform/caprecorder-win32-arm64-msvc": "1.0.1",
-    "@firstform/caprecorder-darwin-x64": "1.0.1",
-    "@firstform/caprecorder-darwin-arm64": "1.0.1",
-    "@firstform/caprecorder-linux-x64-gnu": "1.0.1",
-    "@firstform/caprecorder-linux-arm64-gnu": "1.0.1"
+    "@cap/node-win32-x64-msvc": "workspace:*",
+    "@cap/node-darwin-x64": "workspace:*",
+    "@cap/node-darwin-arm64": "workspace:*",
+    "@cap/node-linux-x64-gnu": "workspace:*"
   }
 }
 ```
@@ -178,15 +197,55 @@ Cross-compilation can fail due to:
    sudo apt-get install libpipewire-0.3-dev libasound2-dev libpulse-dev
    ```
 
-3. **Missing Rust targets**:
+3. **FFmpeg not found (macOS)**:
+   ```
+   error: failed to run custom build command for `ffmpeg-sys-next`
+   ```
+   **Solution:**
+   ```bash
+   brew install ffmpeg pkg-config
+   export PKG_CONFIG_PATH="$(brew --prefix)/lib/pkgconfig:$(brew --prefix ffmpeg)/lib/pkgconfig"
+   ```
+
+4. **V4L2 bindgen errors (Linux)**:
+   ```
+   error: failed to run custom build command for `v4l2-sys-mit`
+   ```
+   **Solution:**
+   ```bash
+   sudo apt-get install libv4l-dev libclang-dev linux-libc-dev
+   export LIBCLANG_PATH="/usr/lib/llvm-14/lib"
+   export BINDGEN_EXTRA_CLANG_ARGS="-I/usr/include/linux"
+   ```
+
+5. **Missing Rust targets**:
    ```bash
    rustup target add <target-triple>
    ```
 
-4. **Cross-compilation failures**: 
+6. **Cross-compilation failures**: 
    - Use GitHub Actions for reliable cross-platform builds
    - Build natively on target platforms
    - Some combinations (like musl cross-compilation) require complex setups
+
+### Environment Variables
+
+Set these for better cross-platform compatibility:
+
+```bash
+# Always set these
+export PKG_CONFIG_ALLOW_SYSTEM_CFLAGS=1
+export PKG_CONFIG_ALLOW_SYSTEM_LIBS=1
+
+# Linux-specific (for bindgen issues)
+export LIBCLANG_PATH="/usr/lib/llvm-14/lib"
+export BINDGEN_EXTRA_CLANG_ARGS="-I/usr/include/linux"
+
+# macOS-specific (if brew paths aren't detected)
+export PKG_CONFIG_PATH="$(brew --prefix)/lib/pkgconfig:$(brew --prefix ffmpeg)/lib/pkgconfig"
+export LIBRARY_PATH="$(brew --prefix)/lib:$(brew --prefix ffmpeg)/lib"
+export CPATH="$(brew --prefix)/include:$(brew --prefix ffmpeg)/include"
+```
 
 ## Development Tips
 

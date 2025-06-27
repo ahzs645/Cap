@@ -50,25 +50,13 @@ case "$OS" in
         ;;
     "Linux")
         echo -e "${YELLOW}Building additional Linux targets...${NC}"
-        # Try ARM64 Linux (more likely to work than musl variants)
-        case "$ARCH" in
-            "x86_64")
-                build_target "aarch64-unknown-linux-gnu" "Linux ARM64" || true
-                ;;
-            "aarch64")
-                build_target "x86_64-unknown-linux-gnu" "Linux x64" || true
-                ;;
-        esac
+        # Focus on x64 only for now due to complexity of ARM cross-compilation
+        echo -e "${BLUE}Linux ARM64 builds are handled by CI/CD for reliability${NC}"
         ;;
     "MINGW"*|"MSYS"*|"CYGWIN"*)
         echo -e "${YELLOW}Building additional Windows targets...${NC}"
-        # Try other Windows architectures
-        case "$ARCH" in
-            "x86_64")
-                build_target "i686-pc-windows-msvc" "Windows x86" || true
-                build_target "aarch64-pc-windows-msvc" "Windows ARM64" || true
-                ;;
-        esac
+        # Focus on x64 for reliability
+        echo -e "${BLUE}Additional Windows targets are handled by CI/CD for reliability${NC}"
         ;;
 esac
 
@@ -78,8 +66,8 @@ ls -la *.node 2>/dev/null || echo "No .node files found"
 
 echo ""
 echo -e "${YELLOW}📝 Supported platforms:${NC}"
-echo -e "${BLUE}  • Windows: x64, x86, ARM64${NC}"
+echo -e "${BLUE}  • Windows: x64${NC}"
 echo -e "${BLUE}  • macOS: Intel x64, Apple Silicon ARM64${NC}"
-echo -e "${BLUE}  • Linux: x64, ARM64 (GNU libc)${NC}"
+echo -e "${BLUE}  • Linux: x64 (GNU libc)${NC}"
 echo ""
 echo -e "${YELLOW}📝 Note: For complete cross-platform builds, use GitHub Actions${NC}"

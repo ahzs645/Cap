@@ -9,8 +9,8 @@
     "build": "napi build --platform --release",
     "build:debug": "napi build --platform",
     "build:cross-platform": "./build-cross-platform.sh",
-    "build:windows": "napi build --platform --release --target x86_64-pc-windows-msvc && napi build --platform --release --target i686-pc-windows-msvc && napi build --platform --release --target aarch64-pc-windows-msvc",
-    "build:linux": "napi build --platform --release --target x86_64-unknown-linux-gnu && napi build --platform --release --target aarch64-unknown-linux-gnu",
+    "build:windows": "napi build --platform --release --target x86_64-pc-windows-msvc",
+    "build:linux": "napi build --platform --release --target x86_64-unknown-linux-gnu",
     "build:macos": "napi build --platform --release --target x86_64-apple-darwin && napi build --platform --release --target aarch64-apple-darwin",
     "prepublishOnly": "napi prepublish -t npm",
     "test": "node tests/index.js",
@@ -57,7 +57,7 @@
     "node": ">= 16"
   },
   "os": ["darwin", "linux", "win32"],
-  "cpu": ["x64", "arm64", "ia32"],
+  "cpu": ["x64", "arm64"],
   "napi": {
     "name": "cap-node",
     "triples": {
@@ -68,8 +68,7 @@
         "aarch64-pc-windows-msvc",
         "x86_64-apple-darwin",
         "aarch64-apple-darwin",
-        "x86_64-unknown-linux-gnu",
-        "aarch64-unknown-linux-gnu"
+        "x86_64-unknown-linux-gnu"
       ]
     }
   },
@@ -84,12 +83,8 @@
   ],
   "optionalDependencies": {
     "@firstform/caprecorder-win32-x64-msvc": "1.0.1",
-    "@firstform/caprecorder-win32-ia32-msvc": "1.0.1",
-    "@firstform/caprecorder-win32-arm64-msvc": "1.0.1",
     "@firstform/caprecorder-darwin-x64": "1.0.1",
     "@firstform/caprecorder-darwin-arm64": "1.0.1",
-    "@firstform/caprecorder-darwin-universal": "1.0.1",
-    "@firstform/caprecorder-linux-x64-gnu": "1.0.1",
-    "@firstform/caprecorder-linux-arm64-gnu": "1.0.1"
+    "@firstform/caprecorder-linux-x64-gnu": "1.0.1"
   }
 }

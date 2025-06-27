@@ -23,35 +23,31 @@ jobs:
             target: x86_64-apple-darwin
             build: |
               cd apps/node
-              npm run build -- --target x86_64-apple-darwin
+              npx napi build --platform --release --target x86_64-apple-darwin
               strip -x *.node
           - host: macos-14
             target: aarch64-apple-darwin
             build: |
               cd apps/node
-              npm run build -- --target aarch64-apple-darwin
+              npx napi build --platform --release --target aarch64-apple-darwin
               strip -x *.node
           - host: windows-latest
+            target: x86_64-pc-windows-msvc
             build: |
               cd apps/node
-              npm run build
-            target: x86_64-pc-windows-msvc
+              npx napi build --platform --release --target x86_64-pc-windows-msvc
           - host: ubuntu-latest
             target: x86_64-unknown-linux-gnu
             docker: ghcr.io/napi-rs/napi-rs/nodejs-rust:lts-debian
             build: |-
               set -e &&
+              apt-get update &&
+              apt-get install -y pkg-config libpipewire-0.3-dev libasound2-dev libpulse-dev libjack-jackd2-dev libssl-dev libv4l-dev libclang-dev ffmpeg libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libswresample-dev linux-libc-dev build-essential &&
+              export LIBCLANG_PATH=/usr/lib/llvm-14/lib &&
+              export BINDGEN_EXTRA_CLANG_ARGS="-I/usr/include/linux" &&
               cd apps/node &&
-              npm run build --target x86_64-unknown-linux-gnu &&
+              npx napi build --platform --release --target x86_64-unknown-linux-gnu &&
               strip *.node
-          - host: ubuntu-latest
-            target: aarch64-unknown-linux-gnu
-            docker: ghcr.io/napi-rs/napi-rs/nodejs-rust:lts-debian-aarch64
-            build: |-
-              set -e &&
-              cd apps/node &&
-              npm run build --target aarch64-unknown-linux-gnu &&
-              aarch64-linux-gnu-strip *.node
 
     name: stable - ${{ matrix.settings.target }} - node@20
     runs-on: ${{ matrix.settings.host }}
@@ -65,6 +61,38 @@ jobs:
         with:
           node-version: 20
           registry-url: https://registry.npmjs.org/
+
+      - name: Install macOS dependencies
+        if: runner.os == 'macOS'
+        run: |
+          brew install ffmpeg pkg-config
+          echo "PKG_CONFIG_PATH=$(brew --prefix)/lib/pkgconfig:$(brew --prefix ffmpeg)/lib/pkgconfig" >> $GITHUB_ENV
+          echo "LIBRARY_PATH=$(brew --prefix)/lib:$(brew --prefix ffmpeg)/lib" >> $GITHUB_ENV
+          echo "CPATH=$(brew --prefix)/include:$(brew --prefix ffmpeg)/include" >> $GITHUB_ENV
+
+      - name: Install Linux dependencies
+        if: runner.os == 'Linux' && !matrix.settings.docker
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            pkg-config \
+            libpipewire-0.3-dev \
+            libasound2-dev \
+            libpulse-dev \
+            libjack-jackd2-dev \
+            libssl-dev \
+            libv4l-dev \
+            libclang-dev \
+            ffmpeg \
+            libavcodec-dev \
+            libavformat-dev \
+            libavutil-dev \
+            libswscale-dev \
+            libswresample-dev \
+            linux-libc-dev \
+            build-essential
+          echo "LIBCLANG_PATH=/usr/lib/llvm-14/lib" >> $GITHUB_ENV
+          echo "BINDGEN_EXTRA_CLANG_ARGS=-I/usr/include/linux" >> $GITHUB_ENV
 
       - name: Install
         uses: dtolnay/rust-toolchain@stable
@@ -119,6 +147,12 @@ jobs:
       - name: Build
         run: ${{ matrix.settings.build }}
         if: ${{ !matrix.settings.docker }}
+        env:
+          PKG_CONFIG_ALLOW_SYSTEM_CFLAGS: 1
+          PKG_CONFIG_ALLOW_SYSTEM_LIBS: 1
+          RUST_TARGET: ${{ matrix.settings.target }}
+          LIBCLANG_PATH: ${{ runner.os == 'Linux' && '/usr/lib/llvm-14/lib' || '' }}
+          BINDGEN_EXTRA_CLANG_ARGS: ${{ runner.os == 'Linux' && '-I/usr/include/linux' || '' }}
         shell: bash
 
       - name: Upload artifact
