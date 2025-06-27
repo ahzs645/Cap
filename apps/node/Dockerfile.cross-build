@@ -5,7 +5,7 @@ RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - \
     && apt-get install -y nodejs \
     && npm install -g pnpm
 
-# Install cross-compilation tools
+# Install cross-compilation tools and system dependencies
 RUN apt-get update && apt-get install -y \
     gcc-multilib \
     gcc-mingw-w64 \
@@ -13,6 +13,9 @@ RUN apt-get update && apt-get install -y \
     gcc-arm-linux-gnueabihf \
     musl-tools \
     pkg-config \
+    libasound2-dev \
+    libpulse-dev \
+    libudev-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Rust targets
@@ -53,5 +56,5 @@ linker = "i686-w64-mingw32-gcc"\n\
 WORKDIR /workspace
 COPY . .
 
-# Build script that builds for all supported Linux targets
-CMD ["bash", "-c", "cd apps/node && pnpm install && ./build-cross-platform.sh"]
+# Build script that builds for x86_64-unknown-linux-gnu
+CMD ["bash", "-c", "cd apps/node && pnpm install && npx @napi-rs/cli build --platform --release --target x86_64-unknown-linux-gnu"]

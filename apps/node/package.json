@@ -5,14 +5,15 @@
   "main": "index.js",
   "types": "index.d.ts",
   "scripts": {
-    "artifacts": "napi artifacts",
-    "build": "napi build --platform --release",
-    "build:debug": "napi build --platform",
+    "artifacts": "npx @napi-rs/cli artifacts",
+    "build": "npx @napi-rs/cli build --platform --release",
+    "build:debug": "npx @napi-rs/cli build --platform",
     "build:cross-platform": "./build-cross-platform.sh",
-    "build:windows": "napi build --platform --release --target x86_64-pc-windows-msvc",
-    "build:linux": "napi build --platform --release --target x86_64-unknown-linux-gnu",
-    "build:macos": "napi build --platform --release --target x86_64-apple-darwin && napi build --platform --release --target aarch64-apple-darwin",
-    "prepublishOnly": "napi prepublish -t npm",
+    "build:linux-docker": "./build-linux-docker.sh",
+    "build:windows": "npx @napi-rs/cli build --platform --release --target x86_64-pc-windows-msvc",
+    "build:linux": "npx @napi-rs/cli build --platform --release --target x86_64-unknown-linux-gnu",
+    "build:macos": "npx @napi-rs/cli build --platform --release --target x86_64-apple-darwin && npx @napi-rs/cli build --platform --release --target aarch64-apple-darwin",
+    "prepublishOnly": "npx @napi-rs/cli prepublish -t npm",
     "test": "node tests/index.js",
     "test:basic": "node tests/index.js basic",
     "test:audio": "node tests/index.js audio",
@@ -23,7 +24,7 @@
     "examples:audio": "node examples.js audio",
     "examples:pause": "node examples.js pause",
     "cleanup": "node cleanup.js",
-    "version": "napi version"
+    "version": "npx @napi-rs/cli version"
   },
   "keywords": [
     "screen-recording",
