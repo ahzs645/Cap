@@ -20,8 +20,5 @@ scap = { workspace = true }
 [build-dependencies]
 napi-build = "2"
 
-[patch.crates-io]
-# Fix the root cause: force newer v4l2-sys-mit that uses newer bindgen
-v4l2-sys-mit = { version = "0.3.0" }
-# Also patch bindgen to ensure consistency
-bindgen = { version = "0.69.4" }
+# NOTE: [patch.crates-io] sections are ignored in workspace members
+# Patches must be added to the workspace root Cargo.toml instead
