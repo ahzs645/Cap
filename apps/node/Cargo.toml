@@ -19,3 +19,5 @@ scap = { workspace = true }
 
 [build-dependencies]
 napi-build = "2"
+# Add this to force a newer bindgen version
+bindgen = "0.69"  # Latest version that handles anonymous unions better

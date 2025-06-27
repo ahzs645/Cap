@@ -42,9 +42,9 @@ jobs:
             build: |-
               set -e &&
               apt-get update &&
-              apt-get install -y pkg-config libpipewire-0.3-dev libasound2-dev libpulse-dev libjack-jackd2-dev libssl-dev libv4l-dev libclang-dev ffmpeg libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libswresample-dev linux-libc-dev build-essential &&
+              apt-get install -y pkg-config libpipewire-0.3-dev libasound2-dev libpulse-dev libjack-jackd2-dev libssl-dev libv4l-dev libclang-dev ffmpeg libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libswresample-dev linux-libc-dev linux-headers-generic build-essential &&
               export LIBCLANG_PATH=/usr/lib/llvm-14/lib &&
-              export BINDGEN_EXTRA_CLANG_ARGS="-I/usr/include/linux" &&
+              export BINDGEN_EXTRA_CLANG_ARGS="-I/usr/include/linux -D_GNU_SOURCE" &&
               cd apps/node &&
               npx @napi-rs/cli build --platform --release --target x86_64-unknown-linux-gnu &&
               strip *.node
@@ -90,9 +90,10 @@ jobs:
             libswscale-dev \
             libswresample-dev \
             linux-libc-dev \
+            linux-headers-generic \
             build-essential
           echo "LIBCLANG_PATH=/usr/lib/llvm-14/lib" >> $GITHUB_ENV
-          echo "BINDGEN_EXTRA_CLANG_ARGS=-I/usr/include/linux" >> $GITHUB_ENV
+          echo "BINDGEN_EXTRA_CLANG_ARGS=-I/usr/include/linux -D_GNU_SOURCE" >> $GITHUB_ENV
 
       - name: Install
         uses: dtolnay/rust-toolchain@stable
@@ -152,7 +153,7 @@ jobs:
           PKG_CONFIG_ALLOW_SYSTEM_LIBS: 1
           RUST_TARGET: ${{ matrix.settings.target }}
           LIBCLANG_PATH: ${{ runner.os == 'Linux' && '/usr/lib/llvm-14/lib' || '' }}
-          BINDGEN_EXTRA_CLANG_ARGS: ${{ runner.os == 'Linux' && '-I/usr/include/linux' || '' }}
+          BINDGEN_EXTRA_CLANG_ARGS: ${{ runner.os == 'Linux' && '-I/usr/include/linux -D_GNU_SOURCE' || '' }}
         shell: bash
 
       - name: Upload artifact
