@@ -22,7 +22,6 @@ ffmpeg.workspace = true
 ffmpeg-sys-next.workspace = true
 flume.workspace = true
 indexmap = "2.5.0"
-nokhwa = { workspace = true, features = ["input-native", "serialize"] }
 num-traits = "0.2.19"
 ringbuf = "0.4.7"
 scap.workspace = true
@@ -71,3 +70,10 @@ windows = { workspace = true, features = [
 	"Win32_Media_MediaFoundation",
 ] }
 windows-capture = { workspace = true }
+
+# Conditional nokhwa dependencies to avoid libspa issues on Linux
+[target.'cfg(not(target_os = "linux"))'.dependencies]
+nokhwa = { workspace = true, features = ["input-native", "serialize"] }
+
+[target.'cfg(target_os = "linux")'.dependencies]
+nokhwa = { workspace = true, features = ["serialize"] }

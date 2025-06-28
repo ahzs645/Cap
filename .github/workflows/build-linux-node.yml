@@ -85,25 +85,25 @@ jobs:
             fi
           done
 
-      - name: Debug libspa dependencies
+      - name: Validate workspace configuration
         run: |
-          echo "🔍 Debugging what's pulling in libspa/pipewire..."
-          echo "=== Checking workspace scap dependency ==="
-          grep -A2 -B2 "scap.*=" Cargo.toml
+          echo "🔧 Validating workspace configuration..."
+          echo "=== Checking for invalid target sections in workspace ==="
+          if grep -n "target\." Cargo.toml; then
+            echo "❌ ERROR: Workspace manifests cannot have target-specific dependencies"
+            echo "💡 Move target-specific deps to individual crate Cargo.toml files"
+            exit 1
+          else
+            echo "✅ No target sections in workspace (good)"
+          fi
           
           echo ""
-          echo "=== Searching for all pipewire/libspa dependencies ==="
-          find . -name "Cargo.toml" -not -path "./target/*" -exec sh -c '
-              if grep -q -E "(pipewire|libspa|nokhwa.*input-native)" "$1"; then
-                  echo "--- Found in: $1 ---"
-                  grep -E "(pipewire|libspa|nokhwa)" "$1"
-                  echo ""
-              fi
-          ' _ {} \;
+          echo "=== Checking workspace nokhwa dependency ==="
+          grep -A2 -B2 "nokhwa.*=" Cargo.toml | head -10
           
           echo ""
-          echo "=== Cargo tree showing pipewire dependencies ==="
-          cargo tree --target x86_64-unknown-linux-gnu | grep -E "(pipewire|libspa|nokhwa)" || echo "No pipewire/libspa found in tree"
+          echo "=== Checking media crate nokhwa usage ==="
+          grep -A2 -B2 "nokhwa" crates/media/Cargo.toml || echo "No nokhwa found in media crate"
 
       - name: Install Node dependencies
         working-directory: apps/node
