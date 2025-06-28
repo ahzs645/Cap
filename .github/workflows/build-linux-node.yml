@@ -1,6 +1,10 @@
 name: Build Linux Node Package
 
 on:
+  # Allow manual triggering from GitHub UI
+  workflow_dispatch:
+  
+  # Automatic triggers
   push:
     branches: [main, dev]
     paths: 
@@ -81,13 +85,11 @@ jobs:
             fi
           done
 
-      # Option A: Use forked scap (recommended)
-      - name: Update to use forked scap (if available)
-        working-directory: apps/node
+      - name: Debug duplicate patches
         run: |
-          # Replace with your actual fork URL
-          # sed -i 's|git = "https://github.com/CapSoftware/scap"|git = "https://github.com/YOUR_USERNAME/scap"|g' Cargo.toml
-          echo "Update Cargo.toml to use your forked scap repository"
+          echo "🔍 Checking workspace patch configuration..."
+          echo "=== Current patch section ==="
+          sed -n '/\[patch\.crates-io\]/,/^\[/p' Cargo.toml
 
       - name: Install Node dependencies
         working-directory: apps/node
