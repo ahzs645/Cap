@@ -26,10 +26,6 @@ specta = { version = "=2.0.0-rc.20", features = [
 ] }
 
 scap = { git = "https://github.com/ahzs645/scap", branch = "zed-patches" }
-nokhwa = { git = "https://github.com/CapSoftware/nokhwa", rev = "b9c8079e82e2", features = [
-	"input-native",
-	"serialize",
-] }
 nokhwa-bindings-macos = { git = "https://github.com/CapSoftware/nokhwa", rev = "b9c8079e82e2" }
 wgpu = "22.1.0"
 flume = "0.11.0"
@@ -54,3 +50,11 @@ dbg_macro = "deny"
 [patch.crates-io]
 screencapturekit = { git = "https://github.com/CapSoftware/screencapturekit-rs", rev = "7ff1e103742e56c8f6c2e940b5e52684ed0bed69" } # branch = "cap-main"
 wry = { git = "https://github.com/CapSoftware/wry", rev = "293f510" }                                                               # branch = "cap"
+
+# For Linux: no input-native to avoid libspa
+[target.'cfg(target_os = "linux")'.dependencies]
+nokhwa = { git = "https://github.com/CapSoftware/nokhwa", rev = "b9c8079e82e2", features = ["serialize"] }
+
+# For other platforms: keep input-native
+[target.'cfg(not(target_os = "linux"))'.dependencies]
+nokhwa = { git = "https://github.com/CapSoftware/nokhwa", rev = "b9c8079e82e2", features = ["input-native", "serialize"] }

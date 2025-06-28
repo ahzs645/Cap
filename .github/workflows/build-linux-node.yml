@@ -85,11 +85,25 @@ jobs:
             fi
           done
 
-      - name: Debug duplicate patches
+      - name: Debug libspa dependencies
         run: |
-          echo "🔍 Checking workspace patch configuration..."
-          echo "=== Current patch section ==="
-          sed -n '/\[patch\.crates-io\]/,/^\[/p' Cargo.toml
+          echo "🔍 Debugging what's pulling in libspa/pipewire..."
+          echo "=== Checking workspace scap dependency ==="
+          grep -A2 -B2 "scap.*=" Cargo.toml
+          
+          echo ""
+          echo "=== Searching for all pipewire/libspa dependencies ==="
+          find . -name "Cargo.toml" -not -path "./target/*" -exec sh -c '
+              if grep -q -E "(pipewire|libspa|nokhwa.*input-native)" "$1"; then
+                  echo "--- Found in: $1 ---"
+                  grep -E "(pipewire|libspa|nokhwa)" "$1"
+                  echo ""
+              fi
+          ' _ {} \;
+          
+          echo ""
+          echo "=== Cargo tree showing pipewire dependencies ==="
+          cargo tree --target x86_64-unknown-linux-gnu | grep -E "(pipewire|libspa|nokhwa)" || echo "No pipewire/libspa found in tree"
 
       - name: Install Node dependencies
         working-directory: apps/node
