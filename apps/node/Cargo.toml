@@ -17,6 +17,13 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 scap = { workspace = true }
 
+# Override media crate to disable audio features on Linux
+[target.'cfg(target_os = "linux")'.dependencies]
+cap-media = { path = "../../crates/media", default-features = false }
+
+[target.'cfg(not(target_os = "linux"))'.dependencies]  
+cap-media = { path = "../../crates/media" }  # Full features on other platforms
+
 [build-dependencies]
 napi-build = "2"
 
