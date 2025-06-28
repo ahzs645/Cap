@@ -17,7 +17,7 @@ cap-project = { path = "../project" }
 cap-flags = { path = "../flags" }
 cap-gpu-converters = { path = "../gpu-converters" }
 cap-audio = { path = "../audio" }
-cpal.workspace = true
+# Remove cpal from general dependencies - make it conditional below
 ffmpeg.workspace = true
 ffmpeg-sys-next.workspace = true
 flume.workspace = true
@@ -74,6 +74,9 @@ windows-capture = { workspace = true }
 # Conditional nokhwa dependencies to avoid libspa issues on Linux
 [target.'cfg(not(target_os = "linux"))'.dependencies]
 nokhwa = { workspace = true, features = ["input-native", "serialize"] }
+# Add conditional compilation for audio - use cpal on non-Linux platforms
+cpal.workspace = true
 
 [target.'cfg(target_os = "linux")'.dependencies]
 nokhwa = { workspace = true, features = ["serialize"] }
+# On Linux, omit cpal entirely to avoid pipewire/libspa issues

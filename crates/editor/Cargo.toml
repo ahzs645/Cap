@@ -13,7 +13,7 @@ cap-rendering = { path = "../rendering" }
 cap-audio = { path = "../audio" }
 
 tokio = { workspace = true, features = ["macros", "process", "fs"] }
-cpal.workspace = true
+# Remove cpal from general dependencies - make it conditional below
 axum = { version = "0.7.5", features = ["ws"] }
 ffmpeg.workspace = true
 specta.workspace = true
@@ -22,3 +22,10 @@ sentry.workspace = true
 futures = "0.3.31"
 tracing.workspace = true
 flume.workspace = true
+
+# Add conditional compilation for audio
+[target.'cfg(not(target_os = "linux"))'.dependencies]
+cpal.workspace = true
+
+[target.'cfg(target_os = "linux")'.dependencies]
+# On Linux, omit cpal entirely to avoid pipewire/libspa issues

@@ -72,7 +72,7 @@ reqwest = { version = "0.12.7", features = ["json", "stream", "multipart"] }
 dotenvy_macro = "0.15.7"
 global-hotkey = "0.6.3"
 rand = "0.8.5"
-cpal.workspace = true
+# Remove cpal from general dependencies - make it conditional below
 keyed_priority_queue = "0.4.2"
 sentry.workspace = true
 clipboard-rs = "0.2.2"
@@ -111,6 +111,8 @@ cocoa = "0.26.0"
 objc = "0.2.7"
 swift-rs = "1.0.6"
 tauri-nspanel = { git = "https://github.com/ahkohd/tauri-nspanel", branch = "v2" }
+# Add cpal for macOS
+cpal.workspace = true
 
 [target.'cfg(target_os= "windows")'.dependencies]
 windows = { workspace = true, features = [
@@ -120,6 +122,8 @@ windows = { workspace = true, features = [
 	"Win32_Graphics_Gdi",
 ] }
 windows-sys = { workspace = true }
+# Add cpal for Windows  
+cpal.workspace = true
 
 [target.'cfg(unix)'.dependencies]
 nix = { version = "0.29.0", features = ["fs"] }
