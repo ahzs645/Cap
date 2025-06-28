@@ -183,7 +183,26 @@ git push origin main
 # Go to Actions → Build Cross-Platform Binaries → Run workflow
 ```
 
-### Method 2: Local Development
+### Method 2: Docker-based Linux Cross-compilation
+
+For building Linux binaries on macOS/Windows using Docker:
+
+```bash
+# Build Linux x86_64 binary using Docker
+npm run build:linux-docker
+
+# This will:
+# 1. Build a Docker image with cross-compilation tools
+# 2. Install ALSA and other Linux dependencies
+# 3. Compile the native binary for x86_64-unknown-linux-gnu
+# 4. Output the binary to the current directory
+```
+
+Prerequisites:
+- Docker installed and running
+- Sufficient disk space for the build image
+
+### Method 3: Local Development
 
 For local development and testing:
 
@@ -203,7 +222,7 @@ npm run build:linux      # Linux targets
 npm run build:android    # Android targets
 ```
 
-### Method 3: Platform-Specific Building
+### Method 4: Platform-Specific Building
 
 Build natively on each target platform for best results:
 
@@ -263,7 +282,7 @@ sudo apt-get install -y \
   build-essential
 ```
 
-### Method 4: Docker Cross-Compilation
+### Method 5: Docker Cross-Compilation
 
 For complex cross-compilation setups:
 

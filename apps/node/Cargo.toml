@@ -19,3 +19,6 @@ scap = { workspace = true }
 
 [build-dependencies]
 napi-build = "2"
+
+# NOTE: [patch.crates-io] sections are ignored in workspace members
+# Patches must be added to the workspace root Cargo.toml instead
