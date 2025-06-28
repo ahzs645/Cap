@@ -85,33 +85,36 @@ jobs:
             fi
           done
 
-      - name: Deep debug libspa dependency chain
+      - name: COMPREHENSIVE libspa dependency debugging  
         run: |
-          echo "🔍 DEEP DEBUGGING: Finding what's pulling in libspa..."
+          echo "🔍 COMPREHENSIVE DEBUGGING: Finding ALL sources of libspa..."
           
-          echo "=== 1. Checking ALL Cargo.toml files for pipewire/libspa/nokhwa ==="
-          find . -name "Cargo.toml" -not -path "./target/*" | while read file; do
-            if grep -q -E "(pipewire|libspa|nokhwa)" "$file"; then
-              echo "--- $file ---"
-              grep -n -E "(pipewire|libspa|nokhwa)" "$file"
-              echo ""
-            fi
-          done
-          
-          echo "=== 2. Trying to generate dependency tree ==="
-          # Use a simpler approach to find dependencies
+          echo "=== 1. Checking cargo tree for pipewire/libspa on Linux target ==="
           cd apps/node
-          
-          echo "=== 3. Checking apps/node/Cargo.toml specifically ==="
-          cat Cargo.toml
+          cargo tree --target x86_64-unknown-linux-gnu --format "{p} {f}" | grep -E "(pipewire|libspa|cpal)" || echo "No pipewire/libspa/cpal found"
           
           echo ""
-          echo "=== 4. Trying cargo check to see which crate pulls in libspa ==="
-          cargo check --target x86_64-unknown-linux-gnu 2>&1 | head -20 || echo "Cargo check failed"
+          echo "=== 2. Full dependency tree with features ==="
+          cargo tree --target x86_64-unknown-linux-gnu --format "{p} {f}" | head -50
+          
+          echo ""  
+          echo "=== 3. Checking ALL Cargo.toml files for any pipewire/libspa/audio deps ==="
+          find ../../ -name "Cargo.toml" -not -path "*/target/*" -exec sh -c '
+              if grep -q -E "(pipewire|libspa|cpal|audio|spa)" "$1"; then
+                  echo "--- $1 ---"
+                  grep -n -E "(pipewire|libspa|cpal|audio|spa)" "$1" | head -10
+                  echo ""
+              fi
+          ' _ {} \;
           
           echo ""
-          echo "=== 5. Checking if libspa comes from system packages ==="
-          dpkg -l | grep -i libspa || echo "No libspa system packages found"
+          echo "=== 4. Checking if system libspa is being linked ==="
+          ldd --version || echo "ldd not available"
+          pkg-config --list-all | grep spa || echo "No spa packages found"
+          
+          echo ""
+          echo "=== 5. Verbose cargo check to see compilation order ==="
+          cargo check --target x86_64-unknown-linux-gnu --verbose 2>&1 | grep -E "(libspa|pipewire|cpal)" | head -20 || echo "No libspa in verbose output"
 
       - name: Install Node dependencies
         working-directory: apps/node
