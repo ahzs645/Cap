@@ -10,7 +10,7 @@ workspace = true
 cap-media = { path = "../media" }
 cap-project = { path = "../project" }
 cap-rendering = { path = "../rendering" }
-cap-audio = { path = "../audio" }
+# cap-audio dependency made conditional below to avoid cpal on Linux
 
 tokio = { workspace = true, features = ["macros", "process", "fs"] }
 # Remove cpal from general dependencies - make it conditional below
@@ -26,6 +26,10 @@ flume.workspace = true
 # Add conditional compilation for audio
 [target.'cfg(not(target_os = "linux"))'.dependencies]
 cpal.workspace = true
+# Enable full audio features on non-Linux platforms
+cap-audio = { path = "../audio" }
 
 [target.'cfg(target_os = "linux")'.dependencies]
 # On Linux, omit cpal entirely to avoid pipewire/libspa issues
+# Use cap-audio without audio features (no cpal dependency)
+cap-audio = { path = "../audio", default-features = false }

@@ -88,7 +88,7 @@ cap-media = { path = "../../../crates/media" }
 cap-flags = { path = "../../../crates/flags" }
 cap-recording = { path = "../../../crates/recording" }
 cap-export = { path = "../../../crates/export" }
-cap-audio = { path = "../../../crates/audio" }
+# cap-audio dependency made conditional below to avoid cpal on Linux
 flume.workspace = true
 tracing-subscriber = "0.3.19"
 tracing-appender = "0.2.3"
@@ -113,6 +113,8 @@ swift-rs = "1.0.6"
 tauri-nspanel = { git = "https://github.com/ahkohd/tauri-nspanel", branch = "v2" }
 # Add cpal for macOS
 cpal.workspace = true
+# Enable full audio features on macOS
+cap-audio = { path = "../../../crates/audio" }
 
 [target.'cfg(target_os= "windows")'.dependencies]
 windows = { workspace = true, features = [
@@ -124,6 +126,12 @@ windows = { workspace = true, features = [
 windows-sys = { workspace = true }
 # Add cpal for Windows  
 cpal.workspace = true
+# Enable full audio features on Windows
+cap-audio = { path = "../../../crates/audio" }
+
+[target.'cfg(target_os = "linux")'.dependencies]
+# On Linux, use cap-audio without audio features to avoid pipewire/libspa issues
+cap-audio = { path = "../../../crates/audio", default-features = false }
 
 [target.'cfg(unix)'.dependencies]
 nix = { version = "0.29.0", features = ["fs"] }
