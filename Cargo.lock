@@ -585,6 +585,29 @@ dependencies = [
 
 [[package]]
 name = "bindgen"
+version = "0.65.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cfdf7b466f9a4903edc73f95d6d2bcd5baf8ae620638762244d3f60143643cc5"
+dependencies = [
+ "bitflags 1.3.2",
+ "cexpr 0.6.0",
+ "clang-sys",
+ "lazy_static",
+ "lazycell",
+ "log",
+ "peeking_take_while",
+ "prettyplease",
+ "proc-macro2",
+ "quote",
+ "regex",
+ "rustc-hash 1.1.0",
+ "shlex 1.3.0",
+ "syn 2.0.104",
+ "which 4.4.2",
+]
+
+[[package]]
+name = "bindgen"
 version = "0.69.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "271383c67ccabffb7381723dea0672a673f292304fcb45c01cc648c7a8d58088"
@@ -868,8 +891,8 @@ dependencies = [
  "editor",
  "ffmpeg-next",
  "flume 0.11.1",
- "nokhwa",
- "nokhwa-bindings-macos",
+ "nokhwa 0.10.3",
+ "nokhwa-bindings-macos 0.2.0",
  "scap",
  "serde",
  "serde_json",
@@ -1076,15 +1099,15 @@ dependencies = [
  "flume 0.11.1",
  "futures",
  "indexmap 2.10.0",
- "nokhwa",
- "nokhwa-bindings-macos",
+ "nokhwa 0.10.3",
+ "nokhwa-bindings-macos 0.2.0",
  "num-traits",
  "objc",
  "objc-foundation",
  "objc2-foundation 0.2.2",
  "ringbuf",
  "scap",
- "screencapturekit",
+ "screencapturekit 0.3.5",
  "serde",
  "specta",
  "tempfile",
@@ -1145,7 +1168,7 @@ dependencies = [
  "image 0.25.6",
  "objc",
  "relative-path",
- "screencapturekit",
+ "screencapturekit 0.3.5",
  "serde",
  "serde_json",
  "specta",
@@ -1692,17 +1715,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "core-audio-types"
-version = "0.1.7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9bb31b6a9e9c7cdfbc73bed41f978c41f294e7fc1218f9d74a4bd8901beb87a1"
-dependencies = [
- "cfg-if 1.0.1",
- "core-foundation-sys 0.8.7",
- "libc",
-]
-
-[[package]]
 name = "core-audio-types-rs"
 version = "0.3.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1840,34 +1852,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "core-graphics2"
-version = "0.4.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7e4583956b9806b69f73fcb23aee05eb3620efc282972f08f6a6db7504f8334d"
-dependencies = [
- "bitflags 2.9.1",
- "block",
- "cfg-if 1.0.1",
- "core-foundation 0.10.1",
- "libc",
-]
-
-[[package]]
-name = "core-media"
-version = "0.5.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "735c25a66449364e6850ac0e27e45d5b13c6e6fe6f44a2f96cbff2d9d29447e3"
-dependencies = [
- "block",
- "cfg-if 1.0.1",
- "core-audio-types",
- "core-foundation 0.10.1",
- "core-graphics2",
- "core-video",
- "libc",
-]
-
-[[package]]
 name = "core-media-rs"
 version = "0.3.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1899,19 +1883,6 @@ checksum = "068ec1aa07335261033bf610b2868ea9db05353468b72b0045ae469e00d26121"
 dependencies = [
  "core-foundation 0.10.1",
  "four-char-code",
-]
-
-[[package]]
-name = "core-video"
-version = "0.4.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d45e71d5be22206bed53c3c3cb99315fc4c3d31b8963808c6bc4538168c4f8ef"
-dependencies = [
- "block",
- "core-foundation 0.10.1",
- "core-graphics2",
- "io-surface",
- "libc",
 ]
 
 [[package]]
@@ -4984,13 +4955,30 @@ source = "git+https://github.com/CapSoftware/nokhwa?rev=b9c8079e82e2#b9c8079e82e
 dependencies = [
  "flume 0.10.14",
  "image 0.24.9",
- "nokhwa-bindings-linux",
- "nokhwa-bindings-macos",
- "nokhwa-bindings-windows",
- "nokhwa-core",
+ "nokhwa-bindings-linux 0.1.0",
+ "nokhwa-bindings-macos 0.2.0",
+ "nokhwa-bindings-windows 0.4.0",
+ "nokhwa-core 0.1.0",
  "paste",
  "serde",
  "thiserror 1.0.69",
+]
+
+[[package]]
+name = "nokhwa"
+version = "0.10.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "726195ba627960de1df8695400807eb929d196cae7194dc1cf7ee06728136168"
+dependencies = [
+ "flume 0.11.1",
+ "image 0.25.6",
+ "nokhwa-bindings-linux 0.1.1",
+ "nokhwa-bindings-macos 0.2.2",
+ "nokhwa-bindings-windows 0.4.2",
+ "nokhwa-core 0.1.5",
+ "paste",
+ "serde",
+ "thiserror 2.0.12",
 ]
 
 [[package]]
@@ -4998,9 +4986,19 @@ name = "nokhwa-bindings-linux"
 version = "0.1.0"
 source = "git+https://github.com/CapSoftware/nokhwa?rev=b9c8079e82e2#b9c8079e82e27f0d0f8870d0b40f19dad7cae64c"
 dependencies = [
- "nokhwa-core",
- "v4l",
- "v4l2-sys-mit",
+ "nokhwa-core 0.1.0",
+ "v4l 0.13.1",
+ "v4l2-sys-mit 0.2.0",
+]
+
+[[package]]
+name = "nokhwa-bindings-linux"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9f1abe593709a177b1a6b87ebbae0bfe5ecc2f8d80d81e89e0a9b68487490a01"
+dependencies = [
+ "nokhwa-core 0.1.5",
+ "v4l 0.14.0",
 ]
 
 [[package]]
@@ -5013,7 +5011,24 @@ dependencies = [
  "core-media-sys",
  "core-video-sys",
  "flume 0.10.14",
- "nokhwa-core",
+ "nokhwa-core 0.1.0",
+ "objc",
+ "once_cell",
+]
+
+[[package]]
+name = "nokhwa-bindings-macos"
+version = "0.2.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f12deaea95ab828355b0a86ec0dffde895e4d5d9b79714a3be2caa294d868109"
+dependencies = [
+ "block",
+ "cocoa-foundation 0.1.2",
+ "core-foundation 0.9.4",
+ "core-media-sys",
+ "core-video-sys",
+ "flume 0.11.1",
+ "nokhwa-core 0.1.5",
  "objc",
  "once_cell",
 ]
@@ -5023,7 +5038,18 @@ name = "nokhwa-bindings-windows"
 version = "0.4.0"
 source = "git+https://github.com/CapSoftware/nokhwa?rev=b9c8079e82e2#b9c8079e82e27f0d0f8870d0b40f19dad7cae64c"
 dependencies = [
- "nokhwa-core",
+ "nokhwa-core 0.1.0",
+ "once_cell",
+ "windows 0.43.0",
+]
+
+[[package]]
+name = "nokhwa-bindings-windows"
+version = "0.4.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "21bdd1a21fba66d677559b3e216cdcf23234569853afbf26954d0502c93ff18b"
+dependencies = [
+ "nokhwa-core 0.1.5",
  "once_cell",
  "windows 0.43.0",
 ]
@@ -5038,6 +5064,19 @@ dependencies = [
  "mozjpeg",
  "serde",
  "thiserror 1.0.69",
+]
+
+[[package]]
+name = "nokhwa-core"
+version = "0.1.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b09efd57b56917acc6bd0edad5111b1d073531f14f8625f980875a1fd78a3644"
+dependencies = [
+ "bytes",
+ "image 0.25.6",
+ "mozjpeg",
+ "serde",
+ "thiserror 2.0.12",
 ]
 
 [[package]]
@@ -5943,7 +5982,7 @@ checksum = "3d77244ce2d584cd84f6a15f86195b8c9b2a0dfbfd817c09e0464244091a58ed"
 dependencies = [
  "base64 0.22.1",
  "indexmap 2.10.0",
- "quick-xml",
+ "quick-xml 0.37.5",
  "serde",
  "time",
 ]
@@ -6163,6 +6202,15 @@ name = "quick-error"
 version = "2.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a993555f31e5a609f617c12db6250dedcac1b0a85076912c436e6fc9b2c8e6a3"
+
+[[package]]
+name = "quick-xml"
+version = "0.30.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "eff6510e86862b57b210fd8cbe8ed3f0d7d600b9c2863cd4549a2e033c66e956"
+dependencies = [
+ "memchr",
+]
 
 [[package]]
 name = "quick-xml"
@@ -6851,24 +6899,25 @@ dependencies = [
 [[package]]
 name = "scap"
 version = "0.0.8"
-source = "git+https://github.com/CapSoftware/scap?rev=b914379d787f#b914379d787f934b0cf1f8db6d3cdbd6947b144c"
+source = "git+https://github.com/ahzs645/scap?branch=zed-patches#1647ec3c6b8d2e2d5b26ade832e9ee6e4baa3429"
 dependencies = [
+ "anyhow",
  "cocoa 0.25.0",
- "core-foundation 0.10.1",
- "core-graphics 0.24.0",
  "core-graphics-helmer-fork",
- "core-media",
- "core-media-rs",
- "cpal 0.15.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "dbus",
+ "log",
+ "nokhwa 0.10.7",
  "objc",
  "pipewire",
  "rand 0.8.5",
- "screencapturekit",
+ "screencapturekit 0.2.8",
+ "screencapturekit-sys",
  "sysinfo",
  "tao-core-video-sys",
- "windows 0.58.0",
+ "windows 0.61.3",
  "windows-capture",
+ "x11",
+ "xcb",
 ]
 
 [[package]]
@@ -6927,6 +6976,15 @@ checksum = "94143f37725109f92c262ed2cf5e59bce7498c01bcc1502d7b9afe439a4e9f49"
 
 [[package]]
 name = "screencapturekit"
+version = "0.2.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1a5eeeb57ac94960cfe5ff4c402be6585ae4c8d29a2cf41b276048c2e849d64e"
+dependencies = [
+ "screencapturekit-sys",
+]
+
+[[package]]
+name = "screencapturekit"
 version = "0.3.5"
 source = "git+https://github.com/CapSoftware/screencapturekit-rs?rev=7ff1e103742e56c8f6c2e940b5e52684ed0bed69#7ff1e103742e56c8f6c2e940b5e52684ed0bed69"
 dependencies = [
@@ -6938,6 +6996,20 @@ dependencies = [
  "core-video-rs",
  "dispatch",
  "objc",
+]
+
+[[package]]
+name = "screencapturekit-sys"
+version = "0.2.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "22411b57f7d49e7fe08025198813ee6fd65e1ee5eff4ebc7880c12c82bde4c60"
+dependencies = [
+ "block",
+ "dispatch",
+ "objc",
+ "objc-foundation",
+ "objc_id",
+ "once_cell",
 ]
 
 [[package]]
@@ -7744,17 +7816,16 @@ dependencies = [
 
 [[package]]
 name = "sysinfo"
-version = "0.30.13"
+version = "0.31.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0a5b4ddaee55fb2bea2bf0e5000747e5f5c0de765e5a5ff87f4cd106439f4bb3"
+checksum = "355dbe4f8799b304b05e1b0f05fc59b2a18d36645cf169607da45bde2f69a1be"
 dependencies = [
- "cfg-if 1.0.1",
  "core-foundation-sys 0.8.7",
  "libc",
+ "memchr",
  "ntapi",
- "once_cell",
  "rayon",
- "windows 0.52.0",
+ "windows 0.54.0",
 ]
 
 [[package]]
@@ -8463,7 +8534,7 @@ version = "0.7.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0b1e66e07de489fe43a46678dd0b8df65e0c973909df1b60ba33874e297ba9b9"
 dependencies = [
- "quick-xml",
+ "quick-xml 0.37.5",
  "thiserror 2.0.12",
  "windows 0.61.3",
  "windows-version",
@@ -9202,7 +9273,18 @@ checksum = "fd9946a2fda19c7a729dc72e28b9fd9c653e9b7de954ffe3aecaf51977f88762"
 dependencies = [
  "bitflags 1.3.2",
  "libc",
- "v4l2-sys-mit",
+ "v4l2-sys-mit 0.2.0",
+]
+
+[[package]]
+name = "v4l"
+version = "0.14.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d8fbfea44a46799d62c55323f3c55d06df722fbe577851d848d328a1041c3403"
+dependencies = [
+ "bitflags 1.3.2",
+ "libc",
+ "v4l2-sys-mit 0.3.0",
 ]
 
 [[package]]
@@ -9212,6 +9294,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e0c932c06df4af1dfb229f604214f2a87993784596ff33ffdadcba1b5519254e"
 dependencies = [
  "bindgen 0.56.0",
+]
+
+[[package]]
+name = "v4l2-sys-mit"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6779878362b9bacadc7893eac76abe69612e8837ef746573c4a5239daf11990b"
+dependencies = [
+ "bindgen 0.65.1",
 ]
 
 [[package]]
@@ -9456,7 +9547,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "896fdafd5d28145fce7958917d69f2fd44469b1d4e861cb5961bcbeebc6d1484"
 dependencies = [
  "proc-macro2",
- "quick-xml",
+ "quick-xml 0.37.5",
  "quote",
 ]
 
@@ -10555,6 +10646,18 @@ checksum = "af3a19837351dc82ba89f8a125e22a3c475f05aba604acc023d62b2739ae2909"
 dependencies = [
  "libc",
  "rustix 1.0.7",
+]
+
+[[package]]
+name = "xcb"
+version = "1.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f1e2f212bb1a92cd8caac8051b829a6582ede155ccb60b5d5908b81b100952be"
+dependencies = [
+ "bitflags 1.3.2",
+ "libc",
+ "quick-xml 0.30.0",
+ "x11",
 ]
 
 [[package]]
