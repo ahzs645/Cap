@@ -85,25 +85,33 @@ jobs:
             fi
           done
 
-      - name: Validate workspace configuration
+      - name: Deep debug libspa dependency chain
         run: |
-          echo "🔧 Validating workspace configuration..."
-          echo "=== Checking for invalid target sections in workspace ==="
-          if grep -n "target\." Cargo.toml; then
-            echo "❌ ERROR: Workspace manifests cannot have target-specific dependencies"
-            echo "💡 Move target-specific deps to individual crate Cargo.toml files"
-            exit 1
-          else
-            echo "✅ No target sections in workspace (good)"
-          fi
+          echo "🔍 DEEP DEBUGGING: Finding what's pulling in libspa..."
+          
+          echo "=== 1. Checking ALL Cargo.toml files for pipewire/libspa/nokhwa ==="
+          find . -name "Cargo.toml" -not -path "./target/*" | while read file; do
+            if grep -q -E "(pipewire|libspa|nokhwa)" "$file"; then
+              echo "--- $file ---"
+              grep -n -E "(pipewire|libspa|nokhwa)" "$file"
+              echo ""
+            fi
+          done
+          
+          echo "=== 2. Trying to generate dependency tree ==="
+          # Use a simpler approach to find dependencies
+          cd apps/node
+          
+          echo "=== 3. Checking apps/node/Cargo.toml specifically ==="
+          cat Cargo.toml
           
           echo ""
-          echo "=== Checking workspace nokhwa dependency ==="
-          grep -A2 -B2 "nokhwa.*=" Cargo.toml | head -10
+          echo "=== 4. Trying cargo check to see which crate pulls in libspa ==="
+          cargo check --target x86_64-unknown-linux-gnu 2>&1 | head -20 || echo "Cargo check failed"
           
           echo ""
-          echo "=== Checking media crate nokhwa usage ==="
-          grep -A2 -B2 "nokhwa" crates/media/Cargo.toml || echo "No nokhwa found in media crate"
+          echo "=== 5. Checking if libspa comes from system packages ==="
+          dpkg -l | grep -i libspa || echo "No libspa system packages found"
 
       - name: Install Node dependencies
         working-directory: apps/node

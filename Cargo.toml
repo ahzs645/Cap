@@ -52,3 +52,8 @@ dbg_macro = "deny"
 [patch.crates-io]
 screencapturekit = { git = "https://github.com/CapSoftware/screencapturekit-rs", rev = "7ff1e103742e56c8f6c2e940b5e52684ed0bed69" } # branch = "cap-main"
 wry = { git = "https://github.com/CapSoftware/wry", rev = "293f510" }                                                               # branch = "cap"
+
+# Add these patches to fix libspa compatibility:
+libspa = "0.8.4"
+libspa-sys = "0.8.4" 
+pipewire = "0.8.5"  # Also update pipewire to match
