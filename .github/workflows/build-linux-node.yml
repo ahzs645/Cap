@@ -81,18 +81,23 @@ jobs:
             fi
           done
 
-      - name: Verify workspace configuration
+      # Option A: Use forked scap (recommended)
+      - name: Update to use forked scap (if available)
+        working-directory: apps/node
         run: |
-          echo "Checking workspace Cargo.toml patch section..."
-          if grep -A 10 "\[patch.crates-io\]" Cargo.toml; then
-            echo "✅ Found patch section in workspace"
-          else
-            echo "⚠️  No patch section found - you may need to add the v4l2-sys-mit patches manually"
-          fi
+          # Replace with your actual fork URL
+          # sed -i 's|git = "https://github.com/CapSoftware/scap"|git = "https://github.com/YOUR_USERNAME/scap"|g' Cargo.toml
+          echo "Update Cargo.toml to use your forked scap repository"
 
       - name: Install Node dependencies
         working-directory: apps/node
         run: npm install
+
+      - name: Test cargo metadata
+        run: |
+          echo "Testing if workspace configuration is valid..."
+          cargo metadata --format-version 1 --quiet > /dev/null
+          echo "✅ Workspace configuration is valid"
 
       - name: Build native module
         working-directory: apps/node
