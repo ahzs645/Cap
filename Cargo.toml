@@ -54,5 +54,4 @@ dbg_macro = "deny"
 [patch.crates-io]
 screencapturekit = { git = "https://github.com/CapSoftware/screencapturekit-rs", rev = "7ff1e103742e56c8f6c2e940b5e52684ed0bed69" } # branch = "cap-main"
 wry = { git = "https://github.com/CapSoftware/wry", rev = "293f510" }                                                               # branch = "cap"
-bindgen = "0.69.4"
 v4l2-sys-mit = "0.3.0"
