@@ -81,28 +81,14 @@ jobs:
             fi
           done
 
-      # Option A: Use forked scap (recommended)
-      - name: Update to use forked scap (if available)
-        working-directory: apps/node
+      - name: Verify workspace configuration
         run: |
-          # Replace with your actual fork URL
-          # sed -i 's|git = "https://github.com/CapSoftware/scap"|git = "https://github.com/YOUR_USERNAME/scap"|g' Cargo.toml
-          echo "Update Cargo.toml to use your forked scap repository"
-
-      # Option B: Patch workspace to fix v4l2-sys-mit (alternative approach)
-      - name: Patch workspace for v4l2-sys-mit fix
-        run: |
-          echo "Adding v4l2-sys-mit patch to workspace..."
-          cat >> Cargo.toml << 'EOF'
-
-          # Patch to fix v4l2-sys-mit bindgen issues on Linux
-          [patch.crates-io]
-          bindgen = "0.69.4"
-          v4l2-sys-mit = "0.3.0"
-          EOF
-          
-          echo "Workspace Cargo.toml updated:"
-          tail -5 Cargo.toml
+          echo "Checking workspace Cargo.toml patch section..."
+          if grep -A 10 "\[patch.crates-io\]" Cargo.toml; then
+            echo "✅ Found patch section in workspace"
+          else
+            echo "⚠️  No patch section found - you may need to add the v4l2-sys-mit patches manually"
+          fi
 
       - name: Install Node dependencies
         working-directory: apps/node
