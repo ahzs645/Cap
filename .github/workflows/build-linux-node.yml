@@ -76,16 +76,14 @@ jobs:
         run: |
           echo "🔧 Strategy 1: Building without audio features..."
           
-          # Create Cargo.toml patch to exclude audio
-          cat > temp-cargo-patch.toml << 'EOF'
-          [target.'cfg(target_os = "linux")'.dependencies]
-          cap-media = { path = "../../crates/media", default-features = false }
-          scap = { workspace = true, default-features = false }
-          EOF
-          
-          # Backup original and apply patch
+          # Backup original Cargo.toml
           cp Cargo.toml Cargo.toml.backup
-          cat temp-cargo-patch.toml >> Cargo.toml
+          
+          # Add newline and Linux-specific dependencies to disable audio
+          echo "" >> Cargo.toml
+          echo "[target.'cfg(target_os = \"linux\")'.dependencies]" >> Cargo.toml
+          echo "cap-media = { path = \"../../crates/media\", default-features = false }" >> Cargo.toml
+          echo "scap = { workspace = true, default-features = false }" >> Cargo.toml
           
           # Try build
           npx @napi-rs/cli build --platform --release --target x86_64-unknown-linux-gnu
