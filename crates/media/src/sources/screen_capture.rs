@@ -276,6 +276,8 @@ impl<TCaptureFormat: ScreenCaptureFormat> ScreenCaptureSource<TCaptureFormat> {
         };
         #[cfg(windows)]
         let video_size = (bounds.width as u32, bounds.height as u32);
+        #[cfg(target_os = "linux")]
+        let video_size = (1920, 1080);
 
         this.video_info =
             VideoInfo::from_raw(RawVideoFormat::Bgra, video_size.0, video_size.1, fps);
@@ -330,10 +332,13 @@ impl<TCaptureFormat: ScreenCaptureFormat> ScreenCaptureSource<TCaptureFormat> {
                     {
                         display.raw_handle.id
                     }
-
                     #[cfg(windows)]
                     {
                         display.raw_handle.0 as u32
+                    }
+                    #[cfg(not(any(target_os = "macos", target_os = "windows")))]
+                    {
+                        0u32
                     }
                 };
 

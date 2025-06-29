@@ -37,9 +37,9 @@ impl LocalTimestamp for StreamInstant {
 }
 
 #[cfg(target_os = "linux")]
-impl crate::pipeline::clock::LocalTimestamp for StreamInstant {
-    fn to_system_time(&self) -> std::time::SystemTime {
-        *self
+impl LocalTimestamp for StreamInstant {
+    fn elapsed_since(&self, other: &Self) -> std::time::Duration {
+        self.duration_since(*other).unwrap_or(std::time::Duration::ZERO)
     }
 }
 

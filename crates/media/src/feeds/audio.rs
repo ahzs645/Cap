@@ -250,7 +250,7 @@ impl AudioRenderer {
                 let mut raw_frame =
                     FFAudio::new(AudioData::SAMPLE_FORMAT, samples, ChannelLayout::STEREO);
                 raw_frame.set_rate(AudioData::SAMPLE_RATE);
-                raw_frame.data_mut(0)[0..data.len() * f32::BYTE_SIZE]
+                raw_frame.data_mut(0)[0..data.len() * 4]
                     .copy_from_slice(unsafe { cast_f32_slice_to_bytes(&data) });
 
                 raw_frame
@@ -327,10 +327,7 @@ pub struct AudioPlaybackBuffer<T: FromSampleBytes> {
     resampled_buffer: HeapRb<T>,
 }
 
-impl<T: FromSampleBytes + Copy + Clone> AudioPlaybackBuffer<T> 
-where
-    T: FromSampleBytes + Copy + Clone + Default,
-{
+impl<T: FromSampleBytes> AudioPlaybackBuffer<T> {
     pub const PLAYBACK_SAMPLES_COUNT: u32 = 256;
     const PROCESSING_SAMPLES_COUNT: u32 = 1024;
 
@@ -384,10 +381,7 @@ where
 
         if let Some(rendered) = maybe_rendered {
             let mut typed_data = vec![T::EQUILIBRIUM; rendered.len() / bytes_per_sample];
-
-            for (src, dest) in std::iter::zip(rendered.chunks(bytes_per_sample), &mut typed_data) {
-                *dest = T::from_bytes(src);
-            }
+            T::from_sample_bytes(rendered, &mut typed_data);
             self.resampled_buffer.push_slice(&typed_data);
         }
     }
@@ -397,26 +391,21 @@ where
         playback_buffer[filled..].fill(T::EQUILIBRIUM);
     }
 
-    pub fn render_with_volume(&mut self, rendered: &[u8], volume: f32) {
+    pub fn render_with_volume(&mut self, rendered: &[u8], _volume: f32) {
         let bytes_per_sample = std::mem::size_of::<T>();
         if rendered.len() % bytes_per_sample != 0 {
             return;
         }
 
-        let mut typed_data = vec![T::default(); rendered.len() / bytes_per_sample];
+        let mut typed_data = vec![T::EQUILIBRIUM; rendered.len() / bytes_per_sample];
         T::from_sample_bytes(rendered, &mut typed_data);
-
-        // Apply volume
-        for sample in &mut typed_data {
-            *sample = T::from_sample_bytes_single(sample.to_sample_bytes_single() * volume);
-        }
 
         self.resampled_buffer.push_slice(&typed_data);
     }
 
     pub fn pop_into(&mut self, playback_buffer: &mut [T]) -> usize {
         let filled = self.resampled_buffer.pop_slice(playback_buffer);
-        playback_buffer[filled..].fill(T::default());
+        playback_buffer[filled..].fill(T::EQUILIBRIUM);
         filled
     }
 }
