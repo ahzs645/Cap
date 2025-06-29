@@ -332,6 +332,9 @@ pub trait FromSampleBytes: cpal::SizedSample + std::fmt::Debug + Send + 'static 
     const BYTE_SIZE: usize;
 
     fn from_bytes(bytes: &[u8]) -> Self;
+    fn from_sample_bytes(bytes: &[u8], output: &mut [Self]);
+    fn from_sample_bytes_single(value: f32) -> Self;
+    fn to_sample_bytes_single(&self) -> f32;
 }
 
 #[cfg(target_os = "linux")]
@@ -339,6 +342,9 @@ pub trait FromSampleBytes: std::fmt::Debug + Send + 'static {
     const BYTE_SIZE: usize;
 
     fn from_bytes(bytes: &[u8]) -> Self;
+    fn from_sample_bytes(bytes: &[u8], output: &mut [Self]);
+    fn from_sample_bytes_single(value: f32) -> Self;
+    fn to_sample_bytes_single(&self) -> f32;
 }
 
 macro_rules! sample_bytes {
@@ -350,9 +356,73 @@ macro_rules! sample_bytes {
                 fn from_bytes(bytes: &[u8]) -> Self {
                     Self::from_le_bytes(bytes.try_into().expect("Incorrect byte slice length"))
                 }
+
+                fn from_sample_bytes(bytes: &[u8], output: &mut [Self]) {
+                    for (i, chunk) in bytes.chunks_exact($size).enumerate() {
+                        if i >= output.len() { break; }
+                        output[i] = Self::from_le_bytes(chunk.try_into().expect("Incorrect byte slice length"));
+                    }
+                }
+
+                fn from_sample_bytes_single(value: f32) -> Self {
+                    // Default implementation - may need specific handling per type
+                    value as Self
+                }
+
+                fn to_sample_bytes_single(&self) -> f32 {
+                    // Default implementation - may need specific handling per type
+                    *self as f32
+                }
             }
         )*
     )
 }
 
-sample_bytes!(u8, 1, i16, 2, i32, 4, i64, 8, f32, 4, f64, 8);
+sample_bytes!(u8, 1, i32, 4, i64, 8, f64, 8);
+
+// Specific implementations for f32 and i16 for better audio handling
+impl FromSampleBytes for f32 {
+    const BYTE_SIZE: usize = 4;
+
+    fn from_bytes(bytes: &[u8]) -> Self {
+        Self::from_le_bytes(bytes.try_into().expect("Incorrect byte slice length"))
+    }
+
+    fn from_sample_bytes(bytes: &[u8], output: &mut [Self]) {
+        for (i, chunk) in bytes.chunks_exact(4).enumerate() {
+            if i >= output.len() { break; }
+            output[i] = f32::from_le_bytes([chunk[0], chunk[1], chunk[2], chunk[3]]);
+        }
+    }
+    
+    fn from_sample_bytes_single(value: f32) -> Self {
+        value
+    }
+    
+    fn to_sample_bytes_single(&self) -> f32 {
+        *self
+    }
+}
+
+impl FromSampleBytes for i16 {
+    const BYTE_SIZE: usize = 2;
+
+    fn from_bytes(bytes: &[u8]) -> Self {
+        Self::from_le_bytes(bytes.try_into().expect("Incorrect byte slice length"))
+    }
+
+    fn from_sample_bytes(bytes: &[u8], output: &mut [Self]) {
+        for (i, chunk) in bytes.chunks_exact(2).enumerate() {
+            if i >= output.len() { break; }
+            output[i] = i16::from_le_bytes([chunk[0], chunk[1]]);
+        }
+    }
+    
+    fn from_sample_bytes_single(value: f32) -> Self {
+        (value * i16::MAX as f32) as i16
+    }
+    
+    fn to_sample_bytes_single(&self) -> f32 {
+        *self as f32 / i16::MAX as f32
+    }
+}

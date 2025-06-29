@@ -3,6 +3,14 @@ use std::time::SystemTime;
 use cap_fail::fail;
 #[cfg(not(target_os = "linux"))]
 use cpal::{Device, StreamInstant, SupportedStreamConfig};
+// Additional fixes for Linux compilation issues
+#[cfg(target_os = "linux")]
+pub type Device = ();
+#[cfg(target_os = "linux")]
+pub type SupportedStreamConfig = ();
+#[cfg(target_os = "linux")]
+pub type StreamInstant = std::time::SystemTime;
+
 use ffmpeg_sys_next::AV_TIME_BASE_Q;
 use flume::{Receiver, Sender};
 use indexmap::IndexMap;
@@ -21,9 +29,17 @@ use crate::{
 
 pub type AudioInputDeviceMap = IndexMap<String, (Device, SupportedStreamConfig)>;
 
+#[cfg(not(target_os = "linux"))]
 impl LocalTimestamp for StreamInstant {
     fn elapsed_since(&self, other: &Self) -> std::time::Duration {
         self.duration_since(other).unwrap()
+    }
+}
+
+#[cfg(target_os = "linux")]
+impl crate::pipeline::clock::LocalTimestamp for StreamInstant {
+    fn to_system_time(&self) -> std::time::SystemTime {
+        *self
     }
 }
 

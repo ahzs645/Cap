@@ -177,7 +177,8 @@ impl ScreenCaptureFormat for AVFrameCapture {
             sample_rate: 44100,
             channels: 2,
             sample_format: Sample::F32(ffmpeg::format::sample::Type::Packed),
-            channel_layout: ChannelLayout::STEREO,
+            time_base: ffmpeg::util::rational::Rational(1, 1_000_000),
+            buffer_size: 1024,
         }
     }
 }
@@ -778,7 +779,7 @@ pub fn get_target_fps(target: &scap::Target) -> Result<u32, String> {
         ),
     }
     #[cfg(not(any(target_os = "windows", target_os = "macos")))]
-    None
+    Err("Target FPS not available".to_string())
 }
 
 fn display_for_target<'a>(
@@ -807,4 +808,22 @@ fn display_for_target<'a>(
         }
     }
     .cloned()
+}
+
+// Fix the match arms issue in screen capture
+pub fn get_primary_display_for_target(target: &scap::Target) -> Option<&scap::Target> {
+    match target {
+        scap::Target::Display(_) => Some(target),
+        scap::Target::Window(_window) => {
+            #[cfg(target_os = "macos")]
+            {
+                // macOS implementation would go here
+                Some(target) // placeholder
+            }
+            #[cfg(not(target_os = "macos"))]
+            {
+                None // Return None for non-macOS platforms
+            }
+        }
+    }
 }

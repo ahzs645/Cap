@@ -327,7 +327,10 @@ pub struct AudioPlaybackBuffer<T: FromSampleBytes> {
     resampled_buffer: HeapRb<T>,
 }
 
-impl<T: FromSampleBytes> AudioPlaybackBuffer<T> {
+impl<T: FromSampleBytes + Copy + Clone> AudioPlaybackBuffer<T> 
+where
+    T: FromSampleBytes + Copy + Clone + Default,
+{
     pub const PLAYBACK_SAMPLES_COUNT: u32 = 256;
     const PROCESSING_SAMPLES_COUNT: u32 = 1024;
 
@@ -392,6 +395,29 @@ impl<T: FromSampleBytes> AudioPlaybackBuffer<T> {
     pub fn fill(&mut self, playback_buffer: &mut [T]) {
         let filled = self.resampled_buffer.pop_slice(playback_buffer);
         playback_buffer[filled..].fill(T::EQUILIBRIUM);
+    }
+
+    pub fn render_with_volume(&mut self, rendered: &[u8], volume: f32) {
+        let bytes_per_sample = std::mem::size_of::<T>();
+        if rendered.len() % bytes_per_sample != 0 {
+            return;
+        }
+
+        let mut typed_data = vec![T::default(); rendered.len() / bytes_per_sample];
+        T::from_sample_bytes(rendered, &mut typed_data);
+
+        // Apply volume
+        for sample in &mut typed_data {
+            *sample = T::from_sample_bytes_single(sample.to_sample_bytes_single() * volume);
+        }
+
+        self.resampled_buffer.push_slice(&typed_data);
+    }
+
+    pub fn pop_into(&mut self, playback_buffer: &mut [T]) -> usize {
+        let filled = self.resampled_buffer.pop_slice(playback_buffer);
+        playback_buffer[filled..].fill(T::default());
+        filled
     }
 }
 

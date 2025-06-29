@@ -1,4 +1,4 @@
-use cap_fail::{fail, fail_err};
+use cap_fail::fail_err;
 #[cfg(not(target_os = "linux"))]
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 #[cfg(not(target_os = "linux"))]
@@ -6,6 +6,12 @@ use cpal::{Device, InputCallbackInfo, SampleFormat, StreamConfig, SupportedStrea
 use flume::{Receiver, Sender, TrySendError};
 use indexmap::IndexMap;
 use tracing::{debug, error, info, trace, warn};
+
+// Add these imports for Linux to fix missing types
+#[cfg(target_os = "linux")]
+use ffmpeg::format::Sample;
+#[cfg(target_os = "linux")]
+use ffmpeg::ChannelLayout;
 
 #[cfg(not(target_os = "linux"))]
 use crate::{
@@ -18,6 +24,20 @@ use crate::{
     data::AudioInfo,
     MediaError,
 };
+
+// Fix the placeholder timestamp struct for Linux
+#[cfg(target_os = "linux")]
+#[derive(Clone, Copy, Debug)]
+pub struct LinuxAudioTimestamp {
+    pub capture: std::time::SystemTime,
+}
+
+#[cfg(target_os = "linux")]
+impl LinuxAudioTimestamp {
+    pub fn timestamp(&self) -> LinuxAudioTimestamp {
+        *self
+    }
+}
 
 #[cfg(not(target_os = "linux"))]
 #[derive(Clone)]
@@ -32,7 +52,7 @@ pub struct AudioInputSamples {
 pub struct AudioInputSamples {
     pub data: Vec<u8>,
     pub format: (),  // Placeholder for SampleFormat
-    pub info: (),    // Placeholder for InputCallbackInfo
+    pub info: LinuxAudioTimestamp,    // Proper placeholder with timestamp method
 }
 
 #[cfg(not(target_os = "linux"))]
@@ -133,7 +153,8 @@ impl AudioInputFeed {
             sample_rate: 44100,
             channels: 2,
             sample_format: Sample::F32(ffmpeg::format::sample::Type::Packed),
-            channel_layout: ChannelLayout::STEREO,
+            time_base: ffmpeg::util::rational::Rational(1, 1_000_000),
+            buffer_size: 1024,
         };
 
         Ok(Self {
