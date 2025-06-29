@@ -27,7 +27,7 @@ specta = { version = "=2.0.0-rc.20", features = [
 	"uuid",
 ] }
 
-scap = { git = "https://github.com/ahzs645/scap", branch = "zed-patches" }
+scap = { git = "https://github.com/helmerapp/scap", tag = "v0.0.8" }
 # Remove input-native from workspace default to avoid libspa issues
 nokhwa = { git = "https://github.com/CapSoftware/nokhwa", rev = "b9c8079e82e2", features = ["serialize"] }
 nokhwa-bindings-macos = { git = "https://github.com/CapSoftware/nokhwa", rev = "b9c8079e82e2" }
