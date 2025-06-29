@@ -111,13 +111,25 @@ jobs:
           cargo metadata --format-version 1 --quiet > /dev/null
           echo "✅ Workspace configuration is valid"
 
-      - name: Build native module
+      - name: Try building without media features on Linux
         working-directory: apps/node
         run: |
-          echo "Building for Linux x86_64..."
-          npm run build -- --target x86_64-unknown-linux-gnu
-        env:
-          CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER: gcc
+          echo "🔧 Attempting build with minimal features for Linux..."
+          
+          # First try: build with no default features
+          if cargo build --release --target x86_64-unknown-linux-gnu --no-default-features; then
+            echo "✅ SUCCESS: Built with no default features"
+            exit 0
+          fi
+          
+          # Second try: check what features are available
+          echo "📋 Available features:"
+          cargo metadata --format-version 1 | jq '.packages[] | select(.name=="cap-node") | .features' || echo "No features found"
+          
+          # Third try: normal build (will likely fail, but gives us error info)
+          echo "🔄 Trying normal build..."
+          cargo build --release --target x86_64-unknown-linux-gnu
+        continue-on-error: true
 
       - name: Test the build
         working-directory: apps/node

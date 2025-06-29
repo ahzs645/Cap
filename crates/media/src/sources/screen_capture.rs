@@ -1,3 +1,4 @@
+#[cfg(not(target_os = "linux"))]
 use cpal::traits::{DeviceTrait, HostTrait};
 use ffmpeg::{format::Sample, ChannelLayout};
 use ffmpeg_sys_next::AV_TIME_BASE_Q;
@@ -147,6 +148,7 @@ pub trait ScreenCaptureFormat {
 impl ScreenCaptureFormat for AVFrameCapture {
     type VideoFormat = FFVideo;
 
+    #[cfg(not(target_os = "linux"))]
     fn audio_info() -> AudioInfo {
         let host = cpal::default_host();
         let output_device = host.default_output_device().unwrap();
@@ -157,6 +159,17 @@ impl ScreenCaptureFormat for AVFrameCapture {
         info.sample_format = Sample::F32(ffmpeg::format::sample::Type::Packed);
 
         info
+    }
+
+    #[cfg(target_os = "linux")]
+    fn audio_info() -> AudioInfo {
+        // Empty stub for Linux - no audio support
+        AudioInfo {
+            sample_rate: 44100,
+            channels: 2,
+            sample_format: Sample::F32(ffmpeg::format::sample::Type::Packed),
+            channel_layout: ChannelLayout::STEREO,
+        }
     }
 }
 

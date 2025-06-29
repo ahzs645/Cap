@@ -1,6 +1,7 @@
 use std::time::SystemTime;
 
 use cap_fail::fail;
+#[cfg(not(target_os = "linux"))]
 use cpal::{Device, StreamInstant, SupportedStreamConfig};
 use ffmpeg_sys_next::AV_TIME_BASE_Q;
 use flume::{Receiver, Sender};

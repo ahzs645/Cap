@@ -1,15 +1,25 @@
 use cap_fail::{fail, fail_err};
+#[cfg(not(target_os = "linux"))]
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
+#[cfg(not(target_os = "linux"))]
 use cpal::{Device, InputCallbackInfo, SampleFormat, StreamConfig, SupportedStreamConfig};
 use flume::{Receiver, Sender, TrySendError};
 use indexmap::IndexMap;
 use tracing::{debug, error, info, trace, warn};
 
+#[cfg(not(target_os = "linux"))]
 use crate::{
     data::{ffmpeg_sample_format_for, AudioInfo},
     MediaError,
 };
 
+#[cfg(target_os = "linux")]
+use crate::{
+    data::AudioInfo,
+    MediaError,
+};
+
+#[cfg(not(target_os = "linux"))]
 #[derive(Clone)]
 pub struct AudioInputSamples {
     pub data: Vec<u8>,
@@ -17,8 +27,24 @@ pub struct AudioInputSamples {
     pub info: InputCallbackInfo,
 }
 
+#[cfg(target_os = "linux")]
+#[derive(Clone)]
+pub struct AudioInputSamples {
+    pub data: Vec<u8>,
+    pub format: (),  // Placeholder for SampleFormat
+    pub info: (),    // Placeholder for InputCallbackInfo
+}
+
+#[cfg(not(target_os = "linux"))]
 pub enum AudioInputControl {
     Switch(String, Sender<Result<SupportedStreamConfig, MediaError>>),
+    AttachSender(AudioInputSamplesSender),
+    Shutdown,
+}
+
+#[cfg(target_os = "linux")]
+pub enum AudioInputControl {
+    Switch(String, Sender<Result<(), MediaError>>),  // Placeholder for SupportedStreamConfig
     AttachSender(AudioInputSamplesSender),
     Shutdown,
 }
@@ -41,7 +67,11 @@ impl AudioInputConnection {
 pub type AudioInputSamplesSender = Sender<AudioInputSamples>;
 pub type AudioInputSamplesReceiver = Receiver<AudioInputSamples>;
 
+#[cfg(not(target_os = "linux"))]
 pub type AudioInputDeviceMap = IndexMap<String, (Device, SupportedStreamConfig)>;
+
+#[cfg(target_os = "linux")]
+pub type AudioInputDeviceMap = IndexMap<String, ((), ())>;
 
 pub const MAX_AUDIO_CHANNELS: u16 = 2;
 
@@ -57,6 +87,7 @@ impl AudioInputFeed {
         flume::bounded(60)
     }
 
+    #[cfg(not(target_os = "linux"))]
     pub async fn init(selected_input: &str) -> Result<Self, MediaError> {
         trace!("Initializing audio input feed with device");
         debug!(selected_input);
@@ -94,6 +125,24 @@ impl AudioInputFeed {
         })
     }
 
+    #[cfg(target_os = "linux")]
+    pub async fn init(_selected_input: &str) -> Result<Self, MediaError> {
+        // Empty stub for Linux - no audio support
+        let (control_tx, _control_rx) = flume::bounded(1);
+        let audio_info = AudioInfo {
+            sample_rate: 44100,
+            channels: 2,
+            sample_format: Sample::F32(ffmpeg::format::sample::Type::Packed),
+            channel_layout: ChannelLayout::STEREO,
+        };
+
+        Ok(Self {
+            control_tx,
+            audio_info,
+        })
+    }
+
+    #[cfg(not(target_os = "linux"))]
     pub fn list_devices() -> AudioInputDeviceMap {
         let host = cpal::default_host();
         let mut device_map = IndexMap::new();
@@ -154,6 +203,13 @@ impl AudioInputFeed {
         device_map
     }
 
+    #[cfg(target_os = "linux")]
+    pub fn list_devices() -> AudioInputDeviceMap {
+        // Empty stub for Linux - no audio support
+        IndexMap::new()
+    }
+
+    #[cfg(not(target_os = "linux"))]
     pub async fn switch_input(&mut self, name: &str) -> Result<(), MediaError> {
         fail_err!(
             "media::feeds::audio_input::switch_input",
@@ -180,6 +236,12 @@ impl AudioInputFeed {
         Ok(())
     }
 
+    #[cfg(target_os = "linux")]
+    pub async fn switch_input(&mut self, _name: &str) -> Result<(), MediaError> {
+        // Empty stub for Linux - no audio support
+        Ok(())
+    }
+
     pub async fn add_sender(&self, sender: AudioInputSamplesSender) -> Result<(), MediaError> {
         self.control_tx
             .send_async(AudioInputControl::AttachSender(sender))
@@ -203,6 +265,7 @@ impl AudioInputFeed {
     }
 }
 
+#[cfg(not(target_os = "linux"))]
 fn start_capturing(
     mut device: Device,
     mut config: SupportedStreamConfig,
@@ -348,5 +411,17 @@ fn start_capturing(
                 }
             }
         }
+    }
+}
+
+#[cfg(target_os = "linux")]
+fn start_capturing(
+    _device: (),  // Placeholder for Device type on Linux
+    _config: (),  // Placeholder for SupportedStreamConfig type on Linux  
+    _control: Receiver<AudioInputControl>,
+) {
+    // Empty stub for Linux - no audio support
+    loop {
+        std::thread::sleep(std::time::Duration::from_secs(1));
     }
 }

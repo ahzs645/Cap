@@ -9,6 +9,10 @@ mod platform_impl;
 #[path = "win.rs"]
 mod platform_impl;
 
+#[cfg(target_os = "linux")]
+#[path = "linux.rs"]
+mod platform_impl;
+
 pub use platform_impl::*;
 
 #[derive(Debug, Default, Clone, Copy, Serialize, Deserialize, Type)]

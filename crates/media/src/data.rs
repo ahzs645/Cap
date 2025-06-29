@@ -1,3 +1,4 @@
+#[cfg(not(target_os = "linux"))]
 use cpal::{SampleFormat, SupportedBufferSize, SupportedStreamConfig};
 pub use ffmpeg::format::{
     pixel::Pixel,
@@ -24,6 +25,7 @@ pub enum RawVideoFormat {
     Rgba,
 }
 
+#[cfg(not(target_os = "linux"))]
 pub fn ffmpeg_sample_format_for(sample_format: SampleFormat) -> Option<Sample> {
     match sample_format {
         SampleFormat::U8 => Some(Sample::U8(Type::Planar)),
@@ -109,6 +111,7 @@ impl AudioInfo {
         })
     }
 
+    #[cfg(not(target_os = "linux"))]
     pub fn from_stream_config(config: &SupportedStreamConfig) -> Self {
         let sample_format = ffmpeg_sample_format_for(config.sample_format()).unwrap();
         let buffer_size = match config.buffer_size() {
@@ -324,7 +327,15 @@ impl VideoInfo {
     }
 }
 
+#[cfg(not(target_os = "linux"))]
 pub trait FromSampleBytes: cpal::SizedSample + std::fmt::Debug + Send + 'static {
+    const BYTE_SIZE: usize;
+
+    fn from_bytes(bytes: &[u8]) -> Self;
+}
+
+#[cfg(target_os = "linux")]
+pub trait FromSampleBytes: std::fmt::Debug + Send + 'static {
     const BYTE_SIZE: usize;
 
     fn from_bytes(bytes: &[u8]) -> Self;
