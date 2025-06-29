@@ -45,6 +45,7 @@ pub struct SharingMeta {
 pub enum Platform {
     MacOS,
     Windows,
+    Linux,
 }
 
 impl Default for Platform {
@@ -54,6 +55,13 @@ impl Default for Platform {
 
         #[cfg(target_os = "macos")]
         return Self::MacOS;
+        
+        #[cfg(target_os = "linux")]
+        return Self::Linux;
+        
+        // Fallback for other platforms
+        #[cfg(not(any(windows, target_os = "macos", target_os = "linux")))]
+        return Self::Linux;
     }
 }
 
