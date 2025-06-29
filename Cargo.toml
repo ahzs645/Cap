@@ -4,10 +4,6 @@ members = ["apps/cli", "apps/desktop/src-tauri", "apps/node", "crates/*"]
 
 [workspace.dependencies]
 anyhow = { version = "1.0.86" }
-# This includes a currently-unreleased fix that ensures the audio stream is actually
-# stopped and released on drop on macOS
-# Make cpal conditional to avoid pipewire on Linux builds
-# Keep the current line for now, but we'll make crates disable it conditionally
 cpal = { git = "https://github.com/RustAudio/cpal", rev = "f43d36e55494993bbbde3299af0c53e5cdf4d4cf" }
 ffmpeg = { package = "ffmpeg-next", git = "https://github.com/CapSoftware/rust-ffmpeg", rev = "49db1fede112" }
 ffmpeg-sys-next = "7.1.0"
@@ -27,9 +23,10 @@ specta = { version = "=2.0.0-rc.20", features = [
 	"uuid",
 ] }
 
-scap = { git = "https://github.com/helmerapp/scap", tag = "v0.0.8" }
-# Remove input-native from workspace default to avoid libspa issues
-nokhwa = { git = "https://github.com/CapSoftware/nokhwa", rev = "b9c8079e82e2", features = ["serialize"] }
+# IMPORTANT: Allow feature control for scap
+scap = { git = "https://github.com/helmerapp/scap", tag = "v0.0.8", default-features = false }
+
+nokhwa = { git = "https://github.com/CapSoftware/nokhwa", rev = "b9c8079e82e2", features = ["serialize"], default-features = false }
 nokhwa-bindings-macos = { git = "https://github.com/CapSoftware/nokhwa", rev = "b9c8079e82e2" }
 wgpu = "22.1.0"
 flume = "0.11.0"
@@ -41,7 +38,7 @@ sentry = { version = "0.34.0", features = [
 ] }
 tracing = "0.1.41"
 
-cidre = { git = "https://github.com/yury/cidre", rev = "ef04aaabe14ffbbce4a330973a74b6d797d073ff" }
+cidre = { git = "https://github.com/yury/cidre", rev = "ef04aaabe14ffbbce4a330973a74b6d797d073ff", default-features = false }
 
 windows = "0.58.0"
 windows-sys = "0.59.0"
@@ -52,5 +49,5 @@ percent-encoding = "2.3.1"
 dbg_macro = "deny"
 
 [patch.crates-io]
-screencapturekit = { git = "https://github.com/CapSoftware/screencapturekit-rs", rev = "7ff1e103742e56c8f6c2e940b5e52684ed0bed69" } # branch = "cap-main"
-wry = { git = "https://github.com/CapSoftware/wry", rev = "293f510" }                                                               # branch = "cap"
+screencapturekit = { git = "https://github.com/CapSoftware/screencapturekit-rs", rev = "7ff1e103742e56c8f6c2e940b5e52684ed0bed69" }
+wry = { git = "https://github.com/CapSoftware/wry", rev = "293f510" }

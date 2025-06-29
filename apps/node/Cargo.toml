@@ -6,28 +6,31 @@ edition = "2021"
 [lib]
 crate-type = ["cdylib"]
 
+[features]
+default = ["audio", "video"]
+audio = ["cap-media/audio", "cap-recording/audio"]
+video = ["cap-media/video", "cap-recording/video"]
+linux-minimal = ["video"]  # Video-only for Linux
+
 [dependencies]
 napi = { version = "2", features = ["napi8", "tokio_rt"] }
 napi-derive = "2"
-cap-recording = { path = "../../crates/recording" }
+cap-recording = { path = "../../crates/recording", default-features = false }
 tokio = { workspace = true }
 uuid = { version = "1.0", features = ["v4"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 
-# Platform-specific dependencies to avoid Linux libspa issues
+# Platform-specific feature configuration
 [target.'cfg(target_os = "linux")'.dependencies]
-# Disable audio features on Linux to avoid libspa version conflicts
-cap-media = { path = "../../crates/media", default-features = false }
-scap = { workspace = true, default-features = false }
+cap-media = { path = "../../crates/media", default-features = false, features = ["linux-no-audio"] }
+cap-recording = { path = "../../crates/recording", default-features = false, features = ["video"] }
+scap = { workspace = true, features = [] }  # Minimal scap features for Linux
 
 [target.'cfg(not(target_os = "linux"))'.dependencies]  
-# Full features on macOS and Windows (they don't use libspa)
-cap-media = { path = "../../crates/media" }
-scap = { workspace = true }
+cap-media = { path = "../../crates/media" }  # Full features on macOS/Windows
+cap-recording = { path = "../../crates/recording" }
+scap = { workspace = true, features = ["audio"] }  # Full scap features
 
 [build-dependencies]
 napi-build = "2"
-
-# NOTE: Linux builds will have limited/no audio support to avoid libspa version conflicts
-# For full audio support, use macOS or Windows builds
