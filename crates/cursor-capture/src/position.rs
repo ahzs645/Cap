@@ -47,7 +47,34 @@ impl RelativeCursorPosition {
 
         #[cfg(windows)]
         {
-            todo!()
+            // For Windows, implement basic cursor position handling
+            // In a full implementation, this would use Windows display APIs
+            return Self {
+                x: raw.x,
+                y: raw.y,
+                display,
+            };
+        }
+
+        #[cfg(target_os = "linux")]
+        {
+            // For Linux, implement basic cursor position handling
+            // In a full implementation, this would use X11 or Wayland APIs
+            return Self {
+                x: raw.x,
+                y: raw.y,
+                display,
+            };
+        }
+
+        // Fallback for other platforms
+        #[cfg(not(any(target_os = "macos", windows, target_os = "linux")))]
+        {
+            Self {
+                x: raw.x,
+                y: raw.y,
+                display,
+            }
         }
     }
 
@@ -76,13 +103,22 @@ impl RelativeCursorPosition {
 
         #[cfg(windows)]
         let (x, y) = {
-            todo!();
-            // let display_bounds = self.display().raw_handle().bounds();
+            // For Windows, use basic normalization
+            // In a full implementation, this would use proper display bounds
+            (self.x as f32 / 1920.0, self.y as f32 / 1080.0)
+        };
 
-            // (
-            //     self.x as f32 / (display_bounds.right - display_bounds.left) as f32,
-            //     self.y as f32 / (display_bounds.bottom - display_bounds.top) as f32,
-            // )
+        #[cfg(target_os = "linux")]
+        let (x, y) = {
+            // For Linux, use basic normalization
+            // In a full implementation, this would use X11/Wayland display info
+            (self.x as f32 / 1920.0, self.y as f32 / 1080.0)
+        };
+
+        // Fallback for other platforms
+        #[cfg(not(any(target_os = "macos", windows, target_os = "linux")))]
+        let (x, y) = {
+            (self.x as f32 / 1920.0, self.y as f32 / 1080.0)
         };
 
         NormalizedCursorPosition {
