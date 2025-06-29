@@ -20,7 +20,7 @@ on:
 
 jobs:
   build-linux:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     
     steps:
       - name: Checkout
@@ -69,7 +69,11 @@ jobs:
             libpulse-dev \
             libdbus-1-dev \
             libpipewire-0.3-dev \
-            libspa-0.2-dev
+            libspa-0.2-dev \
+            libx11-dev \
+            libxext-dev \
+            libxfixes-dev \
+            libxrandr-dev
 
       - name: Setup environment variables
         run: |
@@ -85,36 +89,17 @@ jobs:
             fi
           done
 
-      - name: COMPREHENSIVE libspa dependency debugging  
+      - name: Verify libspa elimination (success!)
         run: |
-          echo "🔍 COMPREHENSIVE DEBUGGING: Finding ALL sources of libspa..."
-          
-          echo "=== 1. Checking cargo tree for pipewire/libspa on Linux target ==="
+          echo "✅ Verifying libspa has been eliminated..."
           cd apps/node
-          cargo tree --target x86_64-unknown-linux-gnu --format "{p} {f}" | grep -E "(pipewire|libspa|cpal)" || echo "No pipewire/libspa/cpal found"
-          
-          echo ""
-          echo "=== 2. Full dependency tree with features ==="
-          cargo tree --target x86_64-unknown-linux-gnu --format "{p} {f}" | head -50
-          
-          echo ""  
-          echo "=== 3. Checking ALL Cargo.toml files for any pipewire/libspa/audio deps ==="
-          find ../../ -name "Cargo.toml" -not -path "*/target/*" -exec sh -c '
-              if grep -q -E "(pipewire|libspa|cpal|audio|spa)" "$1"; then
-                  echo "--- $1 ---"
-                  grep -n -E "(pipewire|libspa|cpal|audio|spa)" "$1" | head -10
-                  echo ""
-              fi
-          ' _ {} \;
-          
-          echo ""
-          echo "=== 4. Checking if system libspa is being linked ==="
-          ldd --version || echo "ldd not available"
-          pkg-config --list-all | grep spa || echo "No spa packages found"
-          
-          echo ""
-          echo "=== 5. Verbose cargo check to see compilation order ==="
-          cargo check --target x86_64-unknown-linux-gnu --verbose 2>&1 | grep -E "(libspa|pipewire|cpal)" | head -20 || echo "No libspa in verbose output"
+          if cargo tree --target x86_64-unknown-linux-gnu | grep -E "(pipewire|libspa)" ; then
+            echo "❌ ERROR: libspa still found in dependency tree"
+            exit 1
+          else
+            echo "🎉 SUCCESS: No libspa dependencies found!"
+            echo "✅ The audio feature fix worked perfectly"
+          fi
 
       - name: Install Node dependencies
         working-directory: apps/node
