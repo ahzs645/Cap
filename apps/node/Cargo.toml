@@ -10,22 +10,24 @@ crate-type = ["cdylib"]
 napi = { version = "2", features = ["napi8", "tokio_rt"] }
 napi-derive = "2"
 cap-recording = { path = "../../crates/recording" }
-cap-media = { path = "../../crates/media" }
 tokio = { workspace = true }
 uuid = { version = "1.0", features = ["v4"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-scap = { workspace = true }
 
-# Override media crate to disable audio features on Linux
+# Platform-specific dependencies to avoid Linux libspa issues
 [target.'cfg(target_os = "linux")'.dependencies]
+# Disable audio features on Linux to avoid libspa version conflicts
 cap-media = { path = "../../crates/media", default-features = false }
+scap = { workspace = true, default-features = false }
 
 [target.'cfg(not(target_os = "linux"))'.dependencies]  
-cap-media = { path = "../../crates/media" }  # Full features on other platforms
+# Full features on macOS and Windows (they don't use libspa)
+cap-media = { path = "../../crates/media" }
+scap = { workspace = true }
 
 [build-dependencies]
 napi-build = "2"
 
-# NOTE: [patch.crates-io] sections are ignored in workspace members
-# Patches must be added to the workspace root Cargo.toml instead
+# NOTE: Linux builds will have limited/no audio support to avoid libspa version conflicts
+# For full audio support, use macOS or Windows builds
