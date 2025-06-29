@@ -1,13 +1,12 @@
 use crate::{
     RequestNewScreenshot, RequestRestartRecording, RequestStartRecording, RequestStopRecording,
 };
-use global_hotkey::HotKeyState;
 use serde::{Deserialize, Serialize};
 use specta::Type;
 use std::collections::HashMap;
 use std::sync::Mutex;
 use tauri::{AppHandle, Manager};
-use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut};
+use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut, ShortcutState};
 use tauri_plugin_store::StoreExt;
 use tauri_specta::Event;
 
@@ -71,7 +70,7 @@ pub fn init(app: &AppHandle) {
     app.plugin(
         tauri_plugin_global_shortcut::Builder::new()
             .with_handler(|app, shortcut, event| {
-                if !matches!(event.state(), HotKeyState::Pressed) {
+                if !matches!(event.state(), ShortcutState::Pressed) {
                     return;
                 }
 

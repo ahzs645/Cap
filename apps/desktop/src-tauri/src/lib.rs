@@ -51,7 +51,6 @@ use relative_path::RelativePathBuf;
 
 use scap::capturer::Capturer;
 use scap::frame::Frame;
-use scap::frame::VideoFrame;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use specta::Type;
@@ -1197,7 +1196,7 @@ async fn take_screenshot(app: AppHandle, _state: MutableState<'_, App>) -> Resul
         }
 
         // Create and use capturer on the main thread
-        let mut capturer = Capturer::new(options);
+        let mut capturer = Capturer::build(options).map_err(|e| format!("Failed to build capturer: {}", e))?;
         capturer.start_capture();
         let frame = capturer
             .get_next_frame()
@@ -1210,7 +1209,7 @@ async fn take_screenshot(app: AppHandle, _state: MutableState<'_, App>) -> Resul
         }
 
         match frame {
-            Frame::Video(VideoFrame::BGRA(bgra_frame)) => Ok((
+            Frame::BGRA(bgra_frame) => Ok((
                 bgra_frame.width as u32,
                 bgra_frame.height as u32,
                 bgra_frame.data,
