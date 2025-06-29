@@ -7,3 +7,8 @@ pub use macos::DisplayImpl;
 mod win;
 #[cfg(windows)]
 pub use win::DisplayImpl;
+
+#[cfg(target_os = "linux")]
+mod linux;
+#[cfg(target_os = "linux")]
+pub use linux::DisplayImpl;
