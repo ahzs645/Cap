@@ -11,7 +11,7 @@ on:
 
 jobs:
   build-linux:
-    runs-on: ubuntu-20.04  # Try older Ubuntu with older libspa
+    runs-on: ubuntu-latest
     
     steps:
       - name: Checkout
