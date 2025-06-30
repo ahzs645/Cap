@@ -330,7 +330,7 @@ impl VideoInfo {
 pub trait FromSampleBytes: Default + Copy + Clone + Sized {
     const EQUILIBRIUM: Self;
     
-    fn from_sample_bytes(bytes: &[u8], output: &mut [Self]);
+    fn from_sample_bytes(bytes: &[u8], output: &mut [Self]) where Self: Sized;
     fn from_sample_bytes_single(value: f32) -> Self;
     fn to_sample_bytes_single(&self) -> f32;
 }
@@ -338,7 +338,7 @@ pub trait FromSampleBytes: Default + Copy + Clone + Sized {
 impl FromSampleBytes for f32 {
     const EQUILIBRIUM: Self = 0.0f32;
     
-    fn from_sample_bytes(bytes: &[u8], output: &mut [Self]) {
+    fn from_sample_bytes(bytes: &[u8], output: &mut [Self]) where Self: Sized {
         for (i, chunk) in bytes.chunks_exact(4).enumerate() {
             if i >= output.len() { break; }
             output[i] = f32::from_le_bytes([chunk[0], chunk[1], chunk[2], chunk[3]]);
@@ -357,7 +357,7 @@ impl FromSampleBytes for f32 {
 impl FromSampleBytes for i16 {
     const EQUILIBRIUM: Self = 0i16;
     
-    fn from_sample_bytes(bytes: &[u8], output: &mut [Self]) {
+    fn from_sample_bytes(bytes: &[u8], output: &mut [Self]) where Self: Sized {
         for (i, chunk) in bytes.chunks_exact(2).enumerate() {
             if i >= output.len() { break; }
             output[i] = i16::from_le_bytes([chunk[0], chunk[1]]);
@@ -376,7 +376,7 @@ impl FromSampleBytes for i16 {
 impl FromSampleBytes for i32 {
     const EQUILIBRIUM: Self = 0i32;
     
-    fn from_sample_bytes(bytes: &[u8], output: &mut [Self]) {
+    fn from_sample_bytes(bytes: &[u8], output: &mut [Self]) where Self: Sized {
         for (i, chunk) in bytes.chunks_exact(4).enumerate() {
             if i >= output.len() { break; }
             output[i] = i32::from_le_bytes([chunk[0], chunk[1], chunk[2], chunk[3]]);

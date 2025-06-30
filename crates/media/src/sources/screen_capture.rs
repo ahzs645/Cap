@@ -810,6 +810,11 @@ fn display_for_target<'a>(
                     _ => false,
                 })
             }
+            #[cfg(not(any(target_os = "macos", target_os = "windows")))]
+            {
+                // Stub for Linux and other platforms
+                None
+            }
         }
     }
     .cloned()

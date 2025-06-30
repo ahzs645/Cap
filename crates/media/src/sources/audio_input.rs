@@ -77,12 +77,26 @@ impl AudioInputSource {
             Some(v) => v,
         };
 
-        let elapsed = samples
-            .info
-            .timestamp()
-            .capture
-            .duration_since(&start_timestamp.0)
-            .unwrap();
+        let elapsed = {
+            #[cfg(not(target_os = "linux"))]
+            {
+                samples
+                    .info
+                    .timestamp()
+                    .capture
+                    .duration_since(&start_timestamp.0)
+                    .unwrap()
+            }
+            #[cfg(target_os = "linux")]
+            {
+                samples
+                    .info
+                    .timestamp()
+                    .capture
+                    .duration_since(start_timestamp.0)
+                    .unwrap_or_default()
+            }
+        };
 
         let timestamp = start_timestamp
             .1
