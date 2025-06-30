@@ -127,12 +127,62 @@ jobs:
             fi
           done
           
+      # Windows vcpkg cache for faster builds
+      - name: Cache vcpkg
+        if: runner.os == 'Windows'
+        uses: actions/cache@v4
+        with:
+          path: |
+            C:\vcpkg\installed
+            C:\vcpkg\buildtrees
+          key: ${{ runner.os }}-vcpkg-ffmpeg-${{ hashFiles('**/Cargo.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-vcpkg-ffmpeg-
+            
       # Windows Dependencies
       - name: Install Windows dependencies
         if: runner.os == 'Windows'
         run: |
-          echo "🪟 Setting up Windows environment..."
-          # Windows should work with just the build tools already available
+          echo "🪟 Setting up Windows dependencies..."
+          
+          # Use the pre-installed vcpkg (GitHub Actions runners have it)
+          $vcpkgRoot = $env:VCPKG_INSTALLATION_ROOT
+          echo "📍 Using vcpkg at: $vcpkgRoot"
+          
+          # Install FFmpeg with static linking for better compatibility
+          echo "📦 Installing FFmpeg..."
+          & "$vcpkgRoot\vcpkg.exe" install ffmpeg:x64-windows-static
+          
+          # Install pkg-config (pkgconf on Windows)
+          echo "📦 Installing pkg-config..."
+          & "$vcpkgRoot\vcpkg.exe" install pkgconf:x64-windows-static
+          
+          # Set up comprehensive environment variables
+          echo "VCPKG_ROOT=$vcpkgRoot" >> $env:GITHUB_ENV
+          echo "FFMPEG_DIR=$vcpkgRoot\installed\x64-windows-static" >> $env:GITHUB_ENV
+          echo "PKG_CONFIG_PATH=$vcpkgRoot\installed\x64-windows-static\lib\pkgconfig" >> $env:GITHUB_ENV
+          echo "PKG_CONFIG_ALLOW_SYSTEM_LIBS=1" >> $env:GITHUB_ENV
+          echo "PKG_CONFIG_ALLOW_SYSTEM_CFLAGS=1" >> $env:GITHUB_ENV
+          
+          # Add pkg-config tools to PATH
+          echo "$vcpkgRoot\installed\x64-windows-static\tools\pkgconf" >> $env:GITHUB_PATH
+          echo "$vcpkgRoot\installed\x64-windows-static\bin" >> $env:GITHUB_PATH
+          
+          # Verify installations
+          echo "🔍 Verifying installations..."
+          & "$vcpkgRoot\vcpkg.exe" list ffmpeg
+          & "$vcpkgRoot\vcpkg.exe" list pkgconf
+          
+          # Test pkg-config functionality
+          $pkgConfigPath = "$vcpkgRoot\installed\x64-windows-static\tools\pkgconf\pkgconf.exe"
+          if (Test-Path $pkgConfigPath) {
+            echo "✅ pkg-config found at: $pkgConfigPath"
+            & $pkgConfigPath --version
+          } else {
+            echo "❌ pkg-config not found"
+          }
+          
+          echo "✅ Windows dependencies setup complete"
           
       - name: Install Node.js dependencies
         working-directory: apps/node
@@ -145,6 +195,12 @@ jobs:
           npx @napi-rs/cli build --platform --release --target ${{ matrix.settings.target }}
         env:
           RUST_TARGET: ${{ matrix.settings.target }}
+          # Ensure Windows environment variables are available during build
+          VCPKG_ROOT: ${{ runner.os == 'Windows' && env.VCPKG_ROOT || '' }}
+          FFMPEG_DIR: ${{ runner.os == 'Windows' && env.FFMPEG_DIR || '' }}
+          PKG_CONFIG_PATH: ${{ env.PKG_CONFIG_PATH }}
+          PKG_CONFIG_ALLOW_SYSTEM_LIBS: ${{ env.PKG_CONFIG_ALLOW_SYSTEM_LIBS }}
+          PKG_CONFIG_ALLOW_SYSTEM_CFLAGS: ${{ env.PKG_CONFIG_ALLOW_SYSTEM_CFLAGS }}
           
       - name: Test module loading
         working-directory: apps/node
@@ -175,6 +231,20 @@ jobs:
                 echo "File: $file"
                 file "$file"
                 echo "Size: $(du -h "$file" | cut -f1)"
+                echo "---"
+              fi
+            done
+          else
+            # Windows-specific verification
+            echo "🪟 Windows build verification:"
+            for file in *.node; do
+              if [[ -f "$file" ]]; then
+                echo "File: $file"
+                echo "Size: $(du -h "$file" | cut -f1)"
+                # Check if it's a valid Windows DLL
+                if command -v file >/dev/null 2>&1; then
+                  file "$file"
+                fi
                 echo "---"
               fi
             done

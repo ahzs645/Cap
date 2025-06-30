@@ -3,13 +3,12 @@
 [target.x86_64-pc-windows-msvc]
 rustflags = [
     "-C", "target-feature=+crt-static",
-    "-L", "native=C:/vcpkg/installed/x64-windows-static/lib",
+    "-L", "native=${VCPKG_ROOT}/installed/x64-windows-static/lib",
 ]
 
 [target.x86_64-pc-windows-msvc.env]
-PKG_CONFIG_PATH = "C:/vcpkg/installed/x64-windows-static/lib/pkgconfig"
-FFMPEG_DIR = "C:/vcpkg/installed/x64-windows-static"
-VCPKG_ROOT = "C:/vcpkg"
+PKG_CONFIG_PATH = "${VCPKG_ROOT}/installed/x64-windows-static/lib/pkgconfig"
+FFMPEG_DIR = "${VCPKG_ROOT}/installed/x64-windows-static"
 
 # macOS specific configurations
 [target.x86_64-apple-darwin]
