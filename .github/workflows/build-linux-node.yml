@@ -90,7 +90,7 @@ jobs:
           # Try build
           npx @napi-rs/cli build --platform --release --target x86_64-unknown-linux-gnu
           
-          if [ $? -eq 0 ] && [ -f *.node ]; then
+          if [ $? -eq 0 ] && ls *.node >/dev/null 2>&1; then
             echo "✅ Strategy 1 succeeded - audio disabled"
             echo "BUILD_SUCCESS=strategy1" >> $GITHUB_ENV
           else
@@ -113,7 +113,7 @@ jobs:
           
           npx @napi-rs/cli build --platform --release --target x86_64-unknown-linux-gnu
           
-          if [ $? -eq 0 ] && [ -f *.node ]; then
+          if [ $? -eq 0 ] && ls *.node >/dev/null 2>&1; then
             echo "✅ Strategy 2 succeeded - static linking"
             echo "BUILD_SUCCESS=strategy2" >> $GITHUB_ENV
           else
@@ -134,7 +134,7 @@ jobs:
           # Regular build with audio
           npx @napi-rs/cli build --platform --release --target x86_64-unknown-linux-gnu
           
-          if [ $? -eq 0 ] && [ -f *.node ]; then
+          if [ $? -eq 0 ] && ls *.node >/dev/null 2>&1; then
             echo "✅ Strategy 3 succeeded - with audio"
             echo "BUILD_SUCCESS=strategy3" >> $GITHUB_ENV
           else
