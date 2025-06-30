@@ -61,9 +61,26 @@ jobs:
           echo "🍎 Installing macOS dependencies..."
           brew install ffmpeg pkg-config
           
-          # Set up environment variables
-          echo "PKG_CONFIG_PATH=$(brew --prefix)/lib/pkgconfig" >> $GITHUB_ENV
-          echo "FFMPEG_DIR=$(brew --prefix)/bin" >> $GITHUB_ENV
+          # Verify installation
+          brew list ffmpeg
+          pkg-config --exists libavutil && echo "✅ FFmpeg pkg-config found" || echo "❌ FFmpeg pkg-config not found"
+          
+          # Set up comprehensive environment variables for FFmpeg
+          echo "PKG_CONFIG_PATH=$(brew --prefix)/lib/pkgconfig:$(brew --prefix ffmpeg)/lib/pkgconfig" >> $GITHUB_ENV
+          echo "LIBRARY_PATH=$(brew --prefix)/lib:$(brew --prefix ffmpeg)/lib" >> $GITHUB_ENV
+          echo "CPATH=$(brew --prefix)/include:$(brew --prefix ffmpeg)/include" >> $GITHUB_ENV
+          echo "PKG_CONFIG_ALLOW_SYSTEM_CFLAGS=1" >> $GITHUB_ENV
+          echo "PKG_CONFIG_ALLOW_SYSTEM_LIBS=1" >> $GITHUB_ENV
+          
+          # Verify FFmpeg can be found
+          echo "🔍 Verifying FFmpeg installation..."
+          pkg-config --cflags libavutil || echo "❌ libavutil cflags failed"
+          pkg-config --libs libavutil || echo "❌ libavutil libs failed"
+          
+          # Show paths for debugging
+          echo "📍 Homebrew prefix: $(brew --prefix)"
+          echo "📍 FFmpeg prefix: $(brew --prefix ffmpeg)"
+          echo "📍 PKG_CONFIG_PATH: $(brew --prefix)/lib/pkgconfig:$(brew --prefix ffmpeg)/lib/pkgconfig"
           
       # Linux Dependencies - Using the successful strategy from the log
       - name: Install Linux dependencies
