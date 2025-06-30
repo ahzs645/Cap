@@ -186,6 +186,26 @@ pub fn spawn_cursor_recorder(
                     None
                 };
 
+                #[cfg(target_os = "linux")]
+                let position = if mouse_state.coords != last_mouse_state.coords {
+                    // TODO: Implement proper Linux cursor position handling
+                    // For now, use basic device_query coordinates
+                    let (mouse_x, mouse_y) = (mouse_state.coords.0, mouse_state.coords.1);
+                    
+                    // Simple normalized coordinates - this is a placeholder
+                    // You'll want to implement proper screen bounds detection for Linux
+                    let x = (mouse_x as f64) / 1920.0; // Placeholder screen width
+                    let y = (mouse_y as f64) / 1080.0; // Placeholder screen height
+                    
+                    // Clamp to valid range
+                    let x = x.clamp(0.0, 1.0);
+                    let y = y.clamp(0.0, 1.0);
+                    
+                    Some((x, y))
+                } else {
+                    None
+                };
+
                 if let Some((x, y)) = position {
                     let mouse_event = CursorMoveEvent {
                         active_modifiers: vec![],
@@ -591,4 +611,11 @@ fn get_cursor_image_data() -> Option<CursorData> {
             hotspot: XY::new(hotspot_x, hotspot_y),
         })
     }
+}
+
+#[cfg(target_os = "linux")]
+fn get_cursor_image_data() -> Option<CursorData> {
+    // TODO: Implement Linux cursor capture
+    // For now, return None to allow compilation
+    None
 }
