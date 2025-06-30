@@ -10,9 +10,11 @@
     "build:debug": "npx @napi-rs/cli build --platform",
     "build:cross-platform": "./build-cross-platform.sh",
     "build:linux-docker": "./build-linux-docker.sh",
+    "build:macos": "npx @napi-rs/cli build --platform --release --target aarch64-apple-darwin --target x86_64-apple-darwin",
     "build:windows": "npx @napi-rs/cli build --platform --release --target x86_64-pc-windows-msvc",
     "build:linux": "npx @napi-rs/cli build --platform --release --target x86_64-unknown-linux-gnu",
-    "build:macos": "npx @napi-rs/cli build --platform --release --target x86_64-apple-darwin && npx @napi-rs/cli build --platform --release --target aarch64-apple-darwin",
+    "test:load": "node -e \"try { const cap = require('./index.js'); console.log('✅ Module loaded:', Object.keys(cap)); } catch(e) { console.error('❌ Failed:', e.message); process.exit(1); }\"",
+    "validate:deps": "node -e \"console.log('Node:', process.version); console.log('Platform:', process.platform, process.arch);\"",
     "prepublishOnly": "npx @napi-rs/cli prepublish -t npm",
     "test": "node tests/index.js",
     "test:basic": "node tests/index.js basic",
@@ -62,13 +64,11 @@
   "napi": {
     "name": "cap-node",
     "triples": {
-      "defaults": true,
+      "defaults": false,
       "additional": [
-        "x86_64-pc-windows-msvc",
-        "i686-pc-windows-msvc",
-        "aarch64-pc-windows-msvc",
         "x86_64-apple-darwin",
         "aarch64-apple-darwin",
+        "x86_64-pc-windows-msvc",
         "x86_64-unknown-linux-gnu"
       ]
     }

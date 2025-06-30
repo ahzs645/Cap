@@ -1,14 +1,13 @@
 # .github/workflows/build-cross-platform.yml
-# Updated to use native builds with separate runners
 name: Build Cross-Platform Binaries
 
 on:
   workflow_dispatch:
   push:
-    branches: [main]
-    paths: ['apps/node/**']
+    branches: [main, strats]
+    paths: ['apps/node/**', 'crates/**']
   pull_request:
-    paths: ['apps/node/**']
+    paths: ['apps/node/**', 'crates/**']
 
 jobs:
   build:
@@ -16,147 +15,143 @@ jobs:
       fail-fast: false
       matrix:
         settings:
-          # macOS ARM64 - Native build on ARM64 runner
-          - host: macos-14                    # ARM64 GitHub runner
-            target: aarch64-apple-darwin     # ARM64 target
-            build: npm run build
+          # macOS ARM64 (Apple Silicon)
+          - host: macos-14
+            target: aarch64-apple-darwin
+            name: macOS ARM64
             
-          # macOS Intel - Native build on Intel runner  
-          - host: macos-13                    # Intel GitHub runner
-            target: x86_64-apple-darwin      # Intel target
-            build: npm run build
+          # macOS Intel
+          - host: macos-13
+            target: x86_64-apple-darwin
+            name: macOS Intel
             
-          # Windows x64 - Native build
+          # Windows x64
           - host: windows-latest
             target: x86_64-pc-windows-msvc
-            build: npm run build
+            name: Windows x64
             
-          # Linux x64 - Native build
+          # Linux x64
           - host: ubuntu-latest
             target: x86_64-unknown-linux-gnu
-            build: npm run build
+            name: Linux x64
 
-    name: Build ${{ matrix.settings.target }}
+    name: Build ${{ matrix.settings.name }}
     runs-on: ${{ matrix.settings.host }}
     
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
       
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v2
-        with:
-          version: 8
-          
-      - name: Setup node
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: pnpm
+          cache: npm
+          cache-dependency-path: apps/node/package-lock.json
           
-      - name: Install Rust
+      - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.settings.target }}
           
-      - name: Cache cargo
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            target/
-          key: ${{ matrix.settings.target }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-          
-      # macOS Dependencies - No cross-compilation needed!
-      - name: Setup macOS dependencies (Native)
-        if: contains(matrix.settings.host, 'macos')
+      # macOS Dependencies
+      - name: Install macOS dependencies
+        if: runner.os == 'macOS'
         run: |
-          echo "🍎 Setting up macOS dependencies for native build..."
-          echo "Runner: ${{ matrix.settings.host }}"
-          echo "Target: ${{ matrix.settings.target }}"
-          echo "Current arch: $(uname -m)"
-          
-          # Install dependencies via Homebrew
+          echo "🍎 Installing macOS dependencies..."
           brew install ffmpeg pkg-config
           
-          # Set up environment for NATIVE build (no cross-compilation)
-          echo "PKG_CONFIG_PATH=$(brew --prefix)/lib/pkgconfig:$(brew --prefix ffmpeg)/lib/pkgconfig" >> $GITHUB_ENV
-          echo "LIBRARY_PATH=$(brew --prefix)/lib:$(brew --prefix ffmpeg)/lib" >> $GITHUB_ENV
-          echo "CPATH=$(brew --prefix)/include:$(brew --prefix ffmpeg)/include" >> $GITHUB_ENV
+          # Set up environment variables
+          echo "PKG_CONFIG_PATH=$(brew --prefix)/lib/pkgconfig" >> $GITHUB_ENV
+          echo "FFMPEG_DIR=$(brew --prefix)/bin" >> $GITHUB_ENV
+          
+      # Linux Dependencies - Using the successful strategy from the log
+      - name: Install Linux dependencies
+        if: runner.os == 'Linux'
+        run: |
+          echo "🐧 Installing Linux dependencies..."
+          
+          # Update package list
+          sudo apt-get update
+          
+          # Install core build dependencies
+          sudo apt-get install -y \
+            build-essential \
+            pkg-config \
+            libclang-dev \
+            libavcodec-dev \
+            libavformat-dev \
+            libavutil-dev \
+            libavfilter-dev \
+            libavdevice-dev \
+            libswscale-dev \
+            libswresample-dev \
+            libx11-dev \
+            libxext-dev \
+            libxfixes-dev \
+            libxrandr-dev \
+            libasound2-dev \
+            libpulse-dev \
+            libdbus-1-dev
+          
+          # Install PipeWire dependencies (this was the key to success!)
+          sudo apt-get install -y libpipewire-0.3-dev || true
+          
+          # Set up environment variables
+          echo "PKG_CONFIG_PATH=/usr/lib/x86_64-linux-gnu/pkgconfig:/usr/share/pkgconfig" >> $GITHUB_ENV
           echo "PKG_CONFIG_ALLOW_SYSTEM_CFLAGS=1" >> $GITHUB_ENV
           echo "PKG_CONFIG_ALLOW_SYSTEM_LIBS=1" >> $GITHUB_ENV
           
-          # Verify FFmpeg is found
-          echo "✅ FFmpeg version: $(pkg-config --modversion libavcodec)"
-          
-      - name: Setup Linux dependencies (Complete FFmpeg)
-        if: contains(matrix.settings.host, 'ubuntu')
-        run: |
-          sudo apt-get update
-          
-          # Install ALL FFmpeg libraries
-          sudo apt-get install -y \
-            build-essential pkg-config \
-            libpipewire-0.3-dev libasound2-dev libpulse-dev \
-            libssl-dev libv4l-dev ffmpeg \
-            libavcodec-dev libavformat-dev libavutil-dev \
-            libswscale-dev libswresample-dev libavfilter-dev \
-            libavdevice-dev linux-libc-dev \
-            clang libclang-dev libclang1
-
-          # libclang detection
-          for path in /usr/lib/llvm-*/lib /usr/lib/x86_64-linux-gnu; do
-            if [[ -f "$path/libclang.so" ]] || ls "$path"/libclang.so.* >/dev/null 2>&1; then
+          # Find and set LIBCLANG_PATH
+          for path in /usr/lib/llvm-*/lib /usr/lib/x86_64-linux-gnu /usr/lib; do
+            if ls $path/libclang.so* >/dev/null 2>&1; then
               echo "LIBCLANG_PATH=$path" >> $GITHUB_ENV
               break
             fi
           done
-
-          # Simpler bindgen args (V4L2 issue will remain for now)
-          echo "BINDGEN_EXTRA_CLANG_ARGS=-I/usr/include -I/usr/include/x86_64-linux-gnu --target=x86_64-unknown-linux-gnu -D_GNU_SOURCE" >> $GITHUB_ENV
-          echo "PKG_CONFIG_ALLOW_SYSTEM_CFLAGS=1" >> $GITHUB_ENV
-          echo "PKG_CONFIG_ALLOW_SYSTEM_LIBS=1" >> $GITHUB_ENV
           
-      - name: Setup Windows dependencies
-        if: contains(matrix.settings.host, 'windows')
+      # Windows Dependencies
+      - name: Install Windows dependencies
+        if: runner.os == 'Windows'
         run: |
-          echo "🪟 Setting up Windows dependencies..."
-          # Install pkg-config
-          choco install pkgconfiglite -y
+          echo "🪟 Setting up Windows environment..."
+          # Windows should work with just the build tools already available
           
-          # Install vcpkg and FFmpeg
-          git clone https://github.com/Microsoft/vcpkg.git C:\vcpkg
-          C:\vcpkg\bootstrap-vcpkg.bat
-          C:\vcpkg\vcpkg.exe install ffmpeg:x64-windows-static
-          
-          # Set environment variables
-          echo "VCPKG_ROOT=C:\vcpkg" >> $env:GITHUB_ENV
-          echo "PKG_CONFIG_PATH=C:\vcpkg\installed\x64-windows-static\lib\pkgconfig" >> $env:GITHUB_ENV
-          echo "PKG_CONFIG_ALLOW_SYSTEM_CFLAGS=1" >> $env:GITHUB_ENV
-          echo "PKG_CONFIG_ALLOW_SYSTEM_LIBS=1" >> $env:GITHUB_ENV
-          
-      - name: Install dependencies
+      - name: Install Node.js dependencies
         working-directory: apps/node
-        run: pnpm install
+        run: npm install
         
-      # Native build - no cross-compilation!
-      - name: Build (Native)
+      - name: Build native binary
         working-directory: apps/node
         run: |
-          echo "🔨 Building natively for ${{ matrix.settings.target }}..."
-          echo "Host architecture: $(uname -m || echo 'unknown')"
+          echo "🔨 Building for ${{ matrix.settings.target }}..."
           npx @napi-rs/cli build --platform --release --target ${{ matrix.settings.target }}
         env:
           RUST_TARGET: ${{ matrix.settings.target }}
-        
-      - name: Verify build output
+          
+      - name: Test module loading
         working-directory: apps/node
+        run: |
+          echo "🧪 Testing module loading..."
+          node -e "
+            try {
+              const cap = require('./index.js');
+              console.log('✅ Module loaded successfully');
+              console.log('Available functions:', Object.keys(cap));
+            } catch (e) {
+              console.error('❌ Module load failed:', e.message);
+              process.exit(1);
+            }
+          "
+          
+      - name: Verify build artifacts
+        working-directory: apps/node
+        shell: bash
         run: |
           echo "📁 Build artifacts:"
           ls -la *.node || echo "No .node files found"
           
-          # Show file info (macOS/Linux)
+          # Show file info for non-Windows
           if [[ "${{ runner.os }}" != "Windows" ]]; then
             for file in *.node; do
               if [[ -f "$file" ]]; then
@@ -167,61 +162,40 @@ jobs:
               fi
             done
           fi
-        
+          
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: binaries-${{ matrix.settings.target }}
+          name: cap-node-${{ matrix.settings.target }}
           path: apps/node/*.node
+          retention-days: 7
           if-no-files-found: error
-
-  # Optional: Combine artifacts and publish
-  publish:
-    name: Publish
+  # Summary job to show results
+  summary:
+    name: Build Summary
     runs-on: ubuntu-latest
     needs: build
-    if: github.event_name == 'workflow_dispatch'
+    if: always()
     
     steps:
-      - uses: actions/checkout@v4
-      
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v2
-        with:
-          version: 8
-          
-      - name: Setup node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: pnpm
-          registry-url: https://registry.npmjs.org/
-          
-      - name: Install dependencies
-        working-directory: apps/node
-        run: pnpm install
-        
       - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
-          path: apps/node/artifacts
+          path: artifacts/
           
-      - name: Move binaries to correct location
-        working-directory: apps/node
+      - name: Display build summary
         run: |
-          echo "📦 Organizing binaries..."
-          for dir in artifacts/binaries-*; do
-            if [ -d "$dir" ]; then
-              echo "Processing $dir..."
-              mv "$dir"/*.node . 2>/dev/null || true
-            fi
-          done
-          
-          echo "📁 Final binaries:"
-          ls -la *.node
-          
-      - name: Publish to npm
-        working-directory: apps/node
-        run: npm publish
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          echo "🎉 Cross-platform build completed!"
+          echo ""
+          echo "📦 Built binaries:"
+          find artifacts/ -name "*.node" -exec basename {} \; | sort
+          echo ""
+          echo "� Total artifacts:"
+          find artifacts/ -name "*.node" -exec ls -lh {} \; | awk '{print $5, $9}'
+          echo ""
+          if [[ "${{ needs.build.result }}" == "success" ]]; then
+            echo "✅ All builds successful!"
+          else
+            echo "❌ Some builds failed. Check individual job logs."
+            exit 1
+          fi
