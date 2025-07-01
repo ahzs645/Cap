@@ -59,7 +59,12 @@ jobs:
         if: runner.os == 'macOS'
         run: |
           echo "🍎 Installing macOS dependencies..."
-          brew install ffmpeg pkg-config llvm
+          
+          # Install Command Line Tools and ensure clang is available
+          sudo xcode-select --install || true
+          
+          # Install LLVM which includes libclang, FFmpeg, and pkg-config
+          brew install llvm ffmpeg pkg-config
           
           # Verify installation
           brew list ffmpeg
@@ -81,6 +86,9 @@ jobs:
           
           # Set LIBCLANG_PATH for bindgen/clang dependencies
           echo "LIBCLANG_PATH=$LLVM_PREFIX/lib" >> $GITHUB_ENV
+          
+          # Set BINDGEN_EXTRA_CLANG_ARGS for additional clang arguments and headers
+          echo "BINDGEN_EXTRA_CLANG_ARGS=-I$LLVM_PREFIX/include -I$FFMPEG_PREFIX/include" >> $GITHUB_ENV
           
           # Create symlinks for system-style paths (fallback for build systems expecting /usr/include)
           sudo mkdir -p /usr/local/include
