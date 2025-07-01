@@ -59,7 +59,7 @@ jobs:
         if: runner.os == 'macOS'
         run: |
           echo "🍎 Installing macOS dependencies..."
-          brew install ffmpeg pkg-config
+          brew install ffmpeg pkg-config llvm
           
           # Verify installation
           brew list ffmpeg
@@ -68,6 +68,7 @@ jobs:
           # Get Homebrew and FFmpeg paths
           HOMEBREW_PREFIX=$(brew --prefix)
           FFMPEG_PREFIX=$(brew --prefix ffmpeg)
+          LLVM_PREFIX=$(brew --prefix llvm)
           
           # Set up comprehensive environment variables for FFmpeg
           echo "PKG_CONFIG_PATH=$HOMEBREW_PREFIX/lib/pkgconfig:$FFMPEG_PREFIX/lib/pkgconfig" >> $GITHUB_ENV
@@ -77,6 +78,9 @@ jobs:
           echo "CPLUS_INCLUDE_PATH=$HOMEBREW_PREFIX/include:$FFMPEG_PREFIX/include" >> $GITHUB_ENV
           echo "PKG_CONFIG_ALLOW_SYSTEM_CFLAGS=1" >> $GITHUB_ENV
           echo "PKG_CONFIG_ALLOW_SYSTEM_LIBS=1" >> $GITHUB_ENV
+          
+          # Set LIBCLANG_PATH for bindgen/clang dependencies
+          echo "LIBCLANG_PATH=$LLVM_PREFIX/lib" >> $GITHUB_ENV
           
           # Create symlinks for system-style paths (fallback for build systems expecting /usr/include)
           sudo mkdir -p /usr/local/include
@@ -108,6 +112,8 @@ jobs:
           # Show paths for debugging
           echo "📍 Homebrew prefix: $HOMEBREW_PREFIX"
           echo "📍 FFmpeg prefix: $FFMPEG_PREFIX"
+          echo "📍 LLVM prefix: $LLVM_PREFIX"
+          echo "📍 LIBCLANG_PATH: $LLVM_PREFIX/lib"
           echo "📍 PKG_CONFIG_PATH: $HOMEBREW_PREFIX/lib/pkgconfig:$FFMPEG_PREFIX/lib/pkgconfig"
           echo "📍 C_INCLUDE_PATH: $HOMEBREW_PREFIX/include:$FFMPEG_PREFIX/include"
           
@@ -232,6 +238,7 @@ jobs:
             echo "PKG_CONFIG_PATH: ${PKG_CONFIG_PATH:-not set}"
             echo "C_INCLUDE_PATH: ${C_INCLUDE_PATH:-not set}"
             echo "LIBRARY_PATH: ${LIBRARY_PATH:-not set}"
+            echo "LIBCLANG_PATH: ${LIBCLANG_PATH:-not set}"
             echo "BINDGEN_EXTRA_CLANG_ARGS: ${BINDGEN_EXTRA_CLANG_ARGS:-not set}"
             echo "FFMPEG_SYS_NO_DEFAULT_INCLUDE_PATHS: ${FFMPEG_SYS_NO_DEFAULT_INCLUDE_PATHS:-not set}"
             
@@ -239,6 +246,15 @@ jobs:
             pkg-config --version || echo "❌ pkg-config not found"
             pkg-config --exists libswscale && echo "✅ libswscale found" || echo "❌ libswscale not found"
             pkg-config --cflags libswscale || echo "❌ libswscale cflags failed"
+            
+            # Test LLVM/clang
+            echo "🔍 Verifying LLVM installation..."
+            if [[ -f "$LLVM_PREFIX/lib/libclang.dylib" ]]; then
+              echo "✅ libclang found at $LLVM_PREFIX/lib/libclang.dylib"
+            else
+              echo "❌ libclang not found at expected location"
+              find $LLVM_PREFIX -name "libclang*" 2>/dev/null | head -3 || echo "No libclang files found"
+            fi
             
             # Check for header files
             echo "🔍 Looking for swscale.h..."
