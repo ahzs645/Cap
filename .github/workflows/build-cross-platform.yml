@@ -101,7 +101,6 @@ jobs:
           
           # Additional environment variables for FFmpeg-sys crate
           echo "FFMPEG_PKG_CONFIG_PATH=$FFMPEG_PREFIX/lib/pkgconfig" >> $GITHUB_ENV
-          echo "BINDGEN_EXTRA_CLANG_ARGS=-I$FFMPEG_PREFIX/include" >> $GITHUB_ENV
           
           # Force FFmpeg-sys to use pkg-config instead of looking in /usr/include
           echo "FFMPEG_SYS_NO_DEFAULT_INCLUDE_PATHS=1" >> $GITHUB_ENV
@@ -111,6 +110,11 @@ jobs:
           pkg-config --cflags libavutil || echo "❌ libavutil cflags failed"
           pkg-config --libs libavutil || echo "❌ libavutil libs failed"
           pkg-config --cflags libswscale || echo "❌ libswscale cflags failed"
+          
+          # Verify clang and libclang are available
+          echo "🔍 Verifying clang installation..."
+          clang --version || echo "❌ clang not found"
+          ls -la $LLVM_PREFIX/lib/libclang* || echo "❌ libclang not found in LLVM lib directory"
           
           # Check if headers are accessible
           echo "🔍 Checking header file locations..."
@@ -257,11 +261,15 @@ jobs:
             
             # Test LLVM/clang
             echo "🔍 Verifying LLVM installation..."
-            if [[ -f "$LLVM_PREFIX/lib/libclang.dylib" ]]; then
-              echo "✅ libclang found at $LLVM_PREFIX/lib/libclang.dylib"
+            clang --version || echo "❌ clang not found"
+            if [[ -f "${LIBCLANG_PATH:-}/libclang.dylib" ]]; then
+              echo "✅ libclang found at ${LIBCLANG_PATH}/libclang.dylib"
+              ls -la "${LIBCLANG_PATH}/libclang"* || true
             else
-              echo "❌ libclang not found at expected location"
-              find $LLVM_PREFIX -name "libclang*" 2>/dev/null | head -3 || echo "No libclang files found"
+              echo "❌ libclang not found at expected location: ${LIBCLANG_PATH:-not set}"
+              if [[ -n "${LLVM_PREFIX:-}" ]]; then
+                find "$LLVM_PREFIX" -name "libclang*" 2>/dev/null | head -3 || echo "No libclang files found"
+              fi
             fi
             
             # Check for header files
