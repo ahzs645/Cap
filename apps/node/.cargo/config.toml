@@ -17,11 +17,27 @@ rustflags = [
     "-C", "link-arg=dynamic_lookup",
 ]
 
+[target.x86_64-apple-darwin.env]
+FFMPEG_DIR = "${FFMPEG_DIR}"
+PKG_CONFIG_PATH = "${PKG_CONFIG_PATH}"
+C_INCLUDE_PATH = "${C_INCLUDE_PATH}"
+LIBRARY_PATH = "${LIBRARY_PATH}"
+BINDGEN_EXTRA_CLANG_ARGS = "${BINDGEN_EXTRA_CLANG_ARGS}"
+FFMPEG_SYS_NO_DEFAULT_INCLUDE_PATHS = "${FFMPEG_SYS_NO_DEFAULT_INCLUDE_PATHS}"
+
 [target.aarch64-apple-darwin]
 rustflags = [
     "-C", "link-arg=-undefined", 
     "-C", "link-arg=dynamic_lookup",
 ]
+
+[target.aarch64-apple-darwin.env]
+FFMPEG_DIR = "${FFMPEG_DIR}"
+PKG_CONFIG_PATH = "${PKG_CONFIG_PATH}"
+C_INCLUDE_PATH = "${C_INCLUDE_PATH}"
+LIBRARY_PATH = "${LIBRARY_PATH}"
+BINDGEN_EXTRA_CLANG_ARGS = "${BINDGEN_EXTRA_CLANG_ARGS}"
+FFMPEG_SYS_NO_DEFAULT_INCLUDE_PATHS = "${FFMPEG_SYS_NO_DEFAULT_INCLUDE_PATHS}"
 
 # Linux configurations
 [target.x86_64-unknown-linux-gnu]

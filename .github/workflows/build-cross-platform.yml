@@ -65,22 +65,51 @@ jobs:
           brew list ffmpeg
           pkg-config --exists libavutil && echo "✅ FFmpeg pkg-config found" || echo "❌ FFmpeg pkg-config not found"
           
+          # Get Homebrew and FFmpeg paths
+          HOMEBREW_PREFIX=$(brew --prefix)
+          FFMPEG_PREFIX=$(brew --prefix ffmpeg)
+          
           # Set up comprehensive environment variables for FFmpeg
-          echo "PKG_CONFIG_PATH=$(brew --prefix)/lib/pkgconfig:$(brew --prefix ffmpeg)/lib/pkgconfig" >> $GITHUB_ENV
-          echo "LIBRARY_PATH=$(brew --prefix)/lib:$(brew --prefix ffmpeg)/lib" >> $GITHUB_ENV
-          echo "CPATH=$(brew --prefix)/include:$(brew --prefix ffmpeg)/include" >> $GITHUB_ENV
+          echo "PKG_CONFIG_PATH=$HOMEBREW_PREFIX/lib/pkgconfig:$FFMPEG_PREFIX/lib/pkgconfig" >> $GITHUB_ENV
+          echo "LIBRARY_PATH=$HOMEBREW_PREFIX/lib:$FFMPEG_PREFIX/lib" >> $GITHUB_ENV
+          echo "CPATH=$HOMEBREW_PREFIX/include:$FFMPEG_PREFIX/include" >> $GITHUB_ENV
+          echo "C_INCLUDE_PATH=$HOMEBREW_PREFIX/include:$FFMPEG_PREFIX/include" >> $GITHUB_ENV
+          echo "CPLUS_INCLUDE_PATH=$HOMEBREW_PREFIX/include:$FFMPEG_PREFIX/include" >> $GITHUB_ENV
           echo "PKG_CONFIG_ALLOW_SYSTEM_CFLAGS=1" >> $GITHUB_ENV
           echo "PKG_CONFIG_ALLOW_SYSTEM_LIBS=1" >> $GITHUB_ENV
+          
+          # Create symlinks for system-style paths (fallback for build systems expecting /usr/include)
+          sudo mkdir -p /usr/local/include
+          sudo ln -sf $FFMPEG_PREFIX/include/* /usr/local/include/ || true
+          
+          # Set FFMPEG_DIR for build systems that look for it
+          echo "FFMPEG_DIR=$FFMPEG_PREFIX" >> $GITHUB_ENV
+          echo "FFMPEG_INCLUDE_DIR=$FFMPEG_PREFIX/include" >> $GITHUB_ENV
+          echo "FFMPEG_LIB_DIR=$FFMPEG_PREFIX/lib" >> $GITHUB_ENV
+          
+          # Additional environment variables for FFmpeg-sys crate
+          echo "FFMPEG_PKG_CONFIG_PATH=$FFMPEG_PREFIX/lib/pkgconfig" >> $GITHUB_ENV
+          echo "BINDGEN_EXTRA_CLANG_ARGS=-I$FFMPEG_PREFIX/include" >> $GITHUB_ENV
+          
+          # Force FFmpeg-sys to use pkg-config instead of looking in /usr/include
+          echo "FFMPEG_SYS_NO_DEFAULT_INCLUDE_PATHS=1" >> $GITHUB_ENV
           
           # Verify FFmpeg can be found
           echo "🔍 Verifying FFmpeg installation..."
           pkg-config --cflags libavutil || echo "❌ libavutil cflags failed"
           pkg-config --libs libavutil || echo "❌ libavutil libs failed"
+          pkg-config --cflags libswscale || echo "❌ libswscale cflags failed"
+          
+          # Check if headers are accessible
+          echo "🔍 Checking header file locations..."
+          find $FFMPEG_PREFIX/include -name "swscale.h" -type f | head -5
+          ls -la $FFMPEG_PREFIX/include/libswscale/ || echo "libswscale directory not found in expected location"
           
           # Show paths for debugging
-          echo "📍 Homebrew prefix: $(brew --prefix)"
-          echo "📍 FFmpeg prefix: $(brew --prefix ffmpeg)"
-          echo "📍 PKG_CONFIG_PATH: $(brew --prefix)/lib/pkgconfig:$(brew --prefix ffmpeg)/lib/pkgconfig"
+          echo "📍 Homebrew prefix: $HOMEBREW_PREFIX"
+          echo "📍 FFmpeg prefix: $FFMPEG_PREFIX"
+          echo "📍 PKG_CONFIG_PATH: $HOMEBREW_PREFIX/lib/pkgconfig:$FFMPEG_PREFIX/lib/pkgconfig"
+          echo "📍 C_INCLUDE_PATH: $HOMEBREW_PREFIX/include:$FFMPEG_PREFIX/include"
           
       # Linux Dependencies - Using the successful strategy from the log
       - name: Install Linux dependencies
@@ -188,6 +217,41 @@ jobs:
         working-directory: apps/node
         run: npm install
         
+      - name: Debug build environment
+        working-directory: apps/node
+        run: |
+          echo "🔍 Build environment debug for ${{ matrix.settings.target }}..."
+          echo "RUST_TARGET: ${{ matrix.settings.target }}"
+          
+          if [[ "${{ runner.os }}" == "macOS" ]]; then
+            echo "🍎 macOS Environment:"
+            echo "FFMPEG_DIR: ${FFMPEG_DIR:-not set}"
+            echo "PKG_CONFIG_PATH: ${PKG_CONFIG_PATH:-not set}"
+            echo "C_INCLUDE_PATH: ${C_INCLUDE_PATH:-not set}"
+            echo "LIBRARY_PATH: ${LIBRARY_PATH:-not set}"
+            echo "BINDGEN_EXTRA_CLANG_ARGS: ${BINDGEN_EXTRA_CLANG_ARGS:-not set}"
+            echo "FFMPEG_SYS_NO_DEFAULT_INCLUDE_PATHS: ${FFMPEG_SYS_NO_DEFAULT_INCLUDE_PATHS:-not set}"
+            
+            # Test pkg-config
+            pkg-config --version || echo "❌ pkg-config not found"
+            pkg-config --exists libswscale && echo "✅ libswscale found" || echo "❌ libswscale not found"
+            pkg-config --cflags libswscale || echo "❌ libswscale cflags failed"
+            
+            # Check for header files
+            echo "🔍 Looking for swscale.h..."
+            find /usr/local/include /opt/homebrew/include -name "swscale.h" 2>/dev/null | head -3 || echo "No swscale.h found in standard locations"
+            
+          elif [[ "${{ runner.os }}" == "Windows" ]]; then
+            echo "🪟 Windows Environment:"
+            echo "VCPKG_ROOT: ${VCPKG_ROOT:-not set}"
+            echo "FFMPEG_DIR: ${FFMPEG_DIR:-not set}"
+            
+          elif [[ "${{ runner.os }}" == "Linux" ]]; then
+            echo "🐧 Linux Environment:"
+            echo "PKG_CONFIG_PATH: ${PKG_CONFIG_PATH:-not set}"
+            echo "LIBCLANG_PATH: ${LIBCLANG_PATH:-not set}"
+          fi
+        
       - name: Build native binary
         working-directory: apps/node
         run: |
@@ -197,10 +261,22 @@ jobs:
           RUST_TARGET: ${{ matrix.settings.target }}
           # Ensure Windows environment variables are available during build
           VCPKG_ROOT: ${{ runner.os == 'Windows' && env.VCPKG_ROOT || '' }}
-          FFMPEG_DIR: ${{ runner.os == 'Windows' && env.FFMPEG_DIR || '' }}
+          FFMPEG_DIR: ${{ env.FFMPEG_DIR }}
           PKG_CONFIG_PATH: ${{ env.PKG_CONFIG_PATH }}
           PKG_CONFIG_ALLOW_SYSTEM_LIBS: ${{ env.PKG_CONFIG_ALLOW_SYSTEM_LIBS }}
           PKG_CONFIG_ALLOW_SYSTEM_CFLAGS: ${{ env.PKG_CONFIG_ALLOW_SYSTEM_CFLAGS }}
+          # macOS specific environment variables
+          LIBRARY_PATH: ${{ env.LIBRARY_PATH }}
+          CPATH: ${{ env.CPATH }}
+          C_INCLUDE_PATH: ${{ env.C_INCLUDE_PATH }}
+          CPLUS_INCLUDE_PATH: ${{ env.CPLUS_INCLUDE_PATH }}
+          FFMPEG_INCLUDE_DIR: ${{ env.FFMPEG_INCLUDE_DIR }}
+          FFMPEG_LIB_DIR: ${{ env.FFMPEG_LIB_DIR }}
+          FFMPEG_PKG_CONFIG_PATH: ${{ env.FFMPEG_PKG_CONFIG_PATH }}
+          BINDGEN_EXTRA_CLANG_ARGS: ${{ env.BINDGEN_EXTRA_CLANG_ARGS }}
+          FFMPEG_SYS_NO_DEFAULT_INCLUDE_PATHS: ${{ env.FFMPEG_SYS_NO_DEFAULT_INCLUDE_PATHS }}
+          # Linux specific environment variables
+          LIBCLANG_PATH: ${{ env.LIBCLANG_PATH }}
           
       - name: Test module loading
         working-directory: apps/node
