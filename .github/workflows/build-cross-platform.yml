@@ -197,6 +197,9 @@ jobs:
           echo "$vcpkgRoot\installed\x64-windows-static\tools\pkgconf" >> $env:GITHUB_PATH
           echo "$vcpkgRoot\installed\x64-windows-static\bin" >> $env:GITHUB_PATH
           
+          # Set additional environment variables for Windows multimedia libraries
+          echo "CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_RUSTFLAGS=-L native=$vcpkgRoot\installed\x64-windows-static\lib -l strmiids -l mfuuid -l mf -l mfplat -l ole32 -l oleaut32 -l winmm -l uuid -l quartz" >> $env:GITHUB_ENV
+          
           # Verify installations
           echo "🔍 Verifying installations..."
           & "$vcpkgRoot\vcpkg.exe" list ffmpeg
@@ -245,6 +248,38 @@ jobs:
             echo "🪟 Windows Environment:"
             echo "VCPKG_ROOT: ${VCPKG_ROOT:-not set}"
             echo "FFMPEG_DIR: ${FFMPEG_DIR:-not set}"
+            echo "CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_RUSTFLAGS: ${CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_RUSTFLAGS:-not set}"
+            
+            # Check for Windows SDK libraries that FFmpeg needs
+            echo "🔍 Checking Windows SDK libraries..."
+            powershell -Command "
+              \$sdkPath = (Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows Kits\Installed Roots' -Name KitsRoot10 -ErrorAction SilentlyContinue).KitsRoot10
+              if (\$sdkPath) {
+                Write-Host '📍 Windows SDK found at:' \$sdkPath
+                \$libPaths = Get-ChildItem \"\$sdkPath\\Lib\" -Directory | Sort-Object Name -Descending | Select-Object -First 1
+                if (\$libPaths) {
+                  Write-Host '📍 Latest SDK lib path:' \$libPaths.FullName
+                  \$x64Path = Join-Path \$libPaths.FullName 'um\x64'
+                  if (Test-Path \$x64Path) {
+                    Write-Host '📍 x64 libraries path:' \$x64Path
+                    \$requiredLibs = @('strmiids.lib', 'mfuuid.lib', 'mf.lib', 'mfplat.lib', 'ole32.lib', 'oleaut32.lib', 'winmm.lib', 'uuid.lib')
+                    foreach (\$lib in \$requiredLibs) {
+                      if (Test-Path (Join-Path \$x64Path \$lib)) {
+                        Write-Host \"✅ Found: \$lib\"
+                      } else {
+                        Write-Host \"❌ Missing: \$lib\"
+                      }
+                    }
+                  } else {
+                    Write-Host '❌ x64 library path not found'
+                  }
+                } else {
+                  Write-Host '❌ No SDK lib directories found'
+                }
+              } else {
+                Write-Host '❌ Windows SDK not found in registry'
+              }
+            "
             
           elif [[ "${{ runner.os }}" == "Linux" ]]; then
             echo "🐧 Linux Environment:"
@@ -277,6 +312,8 @@ jobs:
           FFMPEG_SYS_NO_DEFAULT_INCLUDE_PATHS: ${{ env.FFMPEG_SYS_NO_DEFAULT_INCLUDE_PATHS }}
           # Linux specific environment variables
           LIBCLANG_PATH: ${{ env.LIBCLANG_PATH }}
+          # Windows-specific rustflags for multimedia libraries
+          CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_RUSTFLAGS: ${{ env.CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_RUSTFLAGS }}
           
       - name: Test module loading
         working-directory: apps/node

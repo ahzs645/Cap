@@ -4,6 +4,16 @@
 rustflags = [
     "-C", "target-feature=+crt-static",
     "-L", "native=${VCPKG_ROOT}/installed/x64-windows-static/lib",
+    # Add Windows system libraries for FFmpeg Media Foundation and DirectShow support
+    "-l", "strmiids",
+    "-l", "mfuuid", 
+    "-l", "mf",
+    "-l", "mfplat",
+    "-l", "ole32",
+    "-l", "oleaut32",
+    "-l", "winmm",
+    "-l", "uuid",
+    "-l", "quartz",
 ]
 
 [target.x86_64-pc-windows-msvc.env]
