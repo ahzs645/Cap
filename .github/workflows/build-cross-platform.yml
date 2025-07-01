@@ -129,33 +129,40 @@ jobs:
           echo "📍 PKG_CONFIG_PATH: $HOMEBREW_PREFIX/lib/pkgconfig:$FFMPEG_PREFIX/lib/pkgconfig"
           echo "📍 C_INCLUDE_PATH: $HOMEBREW_PREFIX/include:$FFMPEG_PREFIX/include"
           
-      # Linux Dependencies - Using the successful strategy from the log
+      # Linux Dependencies - Comprehensive FFmpeg and build dependencies
       - name: Install Linux dependencies
         if: runner.os == 'Linux'
         run: |
-          echo "🐧 Installing Linux dependencies..."
+          echo "🐧 Setting up Linux dependencies..."
           
-          # Update package list
+          # Update package lists
           sudo apt-get update
           
-          # Install core build dependencies
+          # Install ALL required FFmpeg development packages
           sudo apt-get install -y \
             build-essential \
             pkg-config \
             libclang-dev \
+            ffmpeg \
             libavcodec-dev \
             libavformat-dev \
             libavutil-dev \
-            libavfilter-dev \
-            libavdevice-dev \
             libswscale-dev \
             libswresample-dev \
+            libavdevice-dev \
+            libavfilter-dev \
+            libpostproc-dev \
+            libpipewire-0.3-dev \
+            libasound2-dev \
+            libpulse-dev \
+            libjack-jackd2-dev \
+            libssl-dev \
+            libv4l-dev \
+            linux-libc-dev \
             libx11-dev \
             libxext-dev \
             libxfixes-dev \
             libxrandr-dev \
-            libasound2-dev \
-            libpulse-dev \
             libdbus-1-dev
           
           # Install PipeWire dependencies (this was the key to success!)
@@ -170,9 +177,27 @@ jobs:
           for path in /usr/lib/llvm-*/lib /usr/lib/x86_64-linux-gnu /usr/lib; do
             if ls $path/libclang.so* >/dev/null 2>&1; then
               echo "LIBCLANG_PATH=$path" >> $GITHUB_ENV
+              echo "Found libclang at: $path"
               break
             fi
           done
+          
+          # Set BINDGEN_EXTRA_CLANG_ARGS for Linux headers
+          echo "BINDGEN_EXTRA_CLANG_ARGS=-I/usr/include/linux" >> $GITHUB_ENV
+          
+          # Verify FFmpeg installation
+          echo "🔍 Verifying FFmpeg installation..."
+          pkg-config --exists libavutil && echo "✅ libavutil found" || echo "❌ libavutil not found"
+          pkg-config --exists libswscale && echo "✅ libswscale found" || echo "❌ libswscale not found"
+          pkg-config --exists libavcodec && echo "✅ libavcodec found" || echo "❌ libavcodec not found"
+          
+          # Check if the problematic header exists
+          if [ -f "/usr/include/libswscale/swscale.h" ]; then
+            echo "✅ swscale.h header found"
+          else
+            echo "❌ swscale.h header NOT found"
+            find /usr -name "swscale.h" 2>/dev/null || echo "swscale.h not found anywhere"
+          fi
           
       # Windows vcpkg cache for faster builds
       - name: Cache vcpkg
